@@ -104,8 +104,8 @@ h1, h2, h3, h4, .title-font { font-family: 'Cinzel', serif; font-weight: 700; }
 .card.selected { background: var(--selected-bg); border-color: var(--selected-border); box-shadow: 0 0 0 2px var(--selected-border), inset 0 0 15px rgba(139,26,26,0.1); }
 .card-content { padding: 1.2rem; flex: 1; }
 .card-hero-img { width: 100%; height: 180px; object-fit: cover; border-bottom: 2px solid var(--border); background-color: var(--ink); }
-.card-hero { height: 100px; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--border); }
-.hero-icon { font-size: 4rem; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3)); }
+.card-hero { height: 120px; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid var(--border); position: relative; overflow: hidden;}
+.epic-class-icon { font-family: 'Cinzel Decorative', serif; font-size: 5rem; color: #fff; text-shadow: 0 0 15px rgba(0,0,0,0.8), 2px 2px 4px rgba(0,0,0,1); background: -webkit-linear-gradient(#f4e8c1, #c9a84c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1; }
 .card-title { color: var(--ink); font-size: 1.4rem; margin-bottom: 0.5rem; font-family: 'Cinzel', serif; font-weight: bold;}
 .card-desc { font-size: 1rem; color: var(--ink-light); line-height: 1.4; }
 
@@ -347,6 +347,24 @@ details.tracker-dropdown summary::-webkit-details-marker { display:none; }
               <button class="action-btn" onclick="window.generateName()">✨ AI Name</button>
             </div>
           </div>
+          <div class="form-group">
+            <label class="label">Player Name</label>
+            <input type="text" id="player-name" class="input-text" onchange="window.state.playerName = this.value">
+          </div>
+          <div class="form-group">
+            <label class="label">Alignment</label>
+            <select id="char-alignment" class="input-text" onchange="window.state.alignment = this.value">
+              <option value="Lawful Good">Lawful Good</option>
+              <option value="Neutral Good">Neutral Good</option>
+              <option value="Chaotic Good">Chaotic Good</option>
+              <option value="Lawful Neutral">Lawful Neutral</option>
+              <option value="True Neutral">True Neutral</option>
+              <option value="Chaotic Neutral">Chaotic Neutral</option>
+              <option value="Lawful Evil">Lawful Evil</option>
+              <option value="Neutral Evil">Neutral Evil</option>
+              <option value="Chaotic Evil">Chaotic Evil</option>
+            </select>
+          </div>
         </div>
 
         <div id="panel-spells" class="panel">
@@ -366,7 +384,7 @@ details.tracker-dropdown summary::-webkit-details-marker { display:none; }
 
       <div id="bottom-nav">
           <button id="btn-prev" class="nav-action-btn secondary" onclick="window.goPrev()">⬅ Back</button>
-          <div id="step-indicator">Step 1 / 7</div>
+          <div id="step-indicator">Step 1 / 9</div>
           <button id="btn-next" class="nav-action-btn" onclick="window.goNext()">Next ➡</button>
       </div>
   </div>
@@ -420,21 +438,39 @@ const SPECIES=[
 
 const BACKGROUNDS=[
   { id: 'acolyte', name: 'Acolyte', bonuses: { wis: 2, int: 1 }, feat: 'Magic Initiate (Cleric)', skills: ['Insight', 'Religion'] },
-  { id: 'criminal', name: 'Criminal', bonuses: { dex: 2, int: 1 }, feat: 'Alert', skills: ['Stealth', 'Deception'] },
-  { id: 'soldier', name: 'Soldier', bonuses: { str: 2, con: 1 }, feat: 'Tough', skills: ['Athletics', 'Intimidation'] },
-  { id: 'sage', name: 'Sage', bonuses: { int: 2, wis: 1 }, feat: 'Magic Initiate (Wizard)', skills: ['Arcana', 'History'] }
+  { id: 'artisan', name: 'Artisan', bonuses: { int: 2, dex: 1 }, feat: 'Crafter', skills: ['Investigation', 'Persuasion'] },
+  { id: 'charlatan', name: 'Charlatan', bonuses: { cha: 2, dex: 1 }, feat: 'Skilled', skills: ['Deception', 'Sleight of Hand'] },
+  { id: 'criminal', name: 'Criminal', bonuses: { dex: 2, int: 1 }, feat: 'Alert', skills: ['Sleight of Hand', 'Stealth'] },
+  { id: 'entertainer', name: 'Entertainer', bonuses: { cha: 2, dex: 1 }, feat: 'Musician', skills: ['Acrobatics', 'Performance'] },
+  { id: 'farmer', name: 'Farmer', bonuses: { con: 2, str: 1 }, feat: 'Tough', skills: ['Animal Handling', 'Nature'] },
+  { id: 'guard', name: 'Guard', bonuses: { str: 2, wis: 1 }, feat: 'Alert', skills: ['Athletics', 'Perception'] },
+  { id: 'guide', name: 'Guide', bonuses: { wis: 2, dex: 1 }, feat: 'Magic Initiate (Druid)', skills: ['Stealth', 'Survival'] },
+  { id: 'hermit', name: 'Hermit', bonuses: { wis: 2, con: 1 }, feat: 'Healer', skills: ['Medicine', 'Religion'] },
+  { id: 'merchant', name: 'Merchant', bonuses: { cha: 2, int: 1 }, feat: 'Lucky', skills: ['Animal Handling', 'Persuasion'] },
+  { id: 'noble', name: 'Noble', bonuses: { cha: 2, int: 1 }, feat: 'Skilled', skills: ['History', 'Persuasion'] },
+  { id: 'sage', name: 'Sage', bonuses: { int: 2, wis: 1 }, feat: 'Magic Initiate (Wizard)', skills: ['Arcana', 'History'] },
+  { id: 'sailor', name: 'Sailor', bonuses: { dex: 2, str: 1 }, feat: 'Tavern Brawler', skills: ['Acrobatics', 'Perception'] },
+  { id: 'scribe', name: 'Scribe', bonuses: { int: 2, dex: 1 }, feat: 'Skilled', skills: ['Investigation', 'Perception'] },
+  { id: 'soldier', name: 'Soldier', bonuses: { str: 2, con: 1 }, feat: 'Savage Attacker', skills: ['Athletics', 'Intimidation'] },
+  { id: 'wayfarer', name: 'Wayfarer', bonuses: { dex: 2, wis: 1 }, feat: 'Lucky', skills: ['Insight', 'Stealth'] }
 ];
 
 const CLASSES=[
-  {id:'barbarian',name:'Barbarian', icon:'🪓', bg:'#ff0844', hitDie:12, levels:{1:['Rage','Unarmored Defense']}},
-  {id:'bard',name:'Bard', icon:'🎵', bg:'#f6d365', hitDie:8, casterType:'full', spellAbility:'cha', levels:{1:['Spellcasting','Inspiration']}},
-  {id:'cleric',name:'Cleric', icon:'⚕️', bg:'#fccb90', hitDie:8, casterType:'full', spellAbility:'wis', levels:{1:['Spellcasting','Divine Order']}},
-  {id:'fighter',name:'Fighter', icon:'🛡️', bg:'#8e9eab', hitDie:10, levels:{1:['Style','Second Wind']}},
-  {id:'rogue',name:'Rogue', icon:'🗡️', bg:'#cfd9df', hitDie:8, levels:{1:['Sneak Attack','Expertise']}},
-  {id:'wizard',name:'Wizard', icon:'📖', bg:'#667eea', hitDie:6, casterType:'full', spellAbility:'int', levels:{1:['Spellcasting','Spellbook']}}
+  {id:'barbarian',name:'Barbarian', bg:'linear-gradient(135deg, #8c3224, #3a150f)', hitDie:12, eq:'Greataxe, 4 Handaxes', altGold:50, levels:{1:['Rage','Unarmored Defense']}, subclasses:[{id:'berserker',name:'Path of the Berserker'},{id:'wild',name:'Path of the Wild Heart'}]},
+  {id:'bard',name:'Bard', bg:'linear-gradient(135deg, #7b4c85, #331f38)', hitDie:8, casterType:'full', spellAbility:'cha', eq:'Leather Armor, Rapier, Lute', altGold:100, levels:{1:['Spellcasting','Bardic Inspiration']}, subclasses:[{id:'lore',name:'College of Lore'},{id:'valor',name:'College of Valor'}]},
+  {id:'cleric',name:'Cleric', bg:'linear-gradient(135deg, #6a7c82, #2c3436)', hitDie:8, casterType:'full', spellAbility:'wis', eq:'Chain Shirt, Mace, Shield', altGold:110, levels:{1:['Spellcasting','Divine Order']}, subclasses:[{id:'life',name:'Life Domain'},{id:'light',name:'Light Domain'}]},
+  {id:'druid',name:'Druid', bg:'linear-gradient(135deg, #4b6b37, #1f2c17)', hitDie:8, casterType:'full', spellAbility:'wis', eq:'Leather Armor, Shield, Quarterstaff', altGold:50, levels:{1:['Spellcasting','Primal Order']}, subclasses:[{id:'land',name:'Circle of the Land'},{id:'moon',name:'Circle of the Moon'}]},
+  {id:'fighter',name:'Fighter', bg:'linear-gradient(135deg, #632d2c, #291212)', hitDie:10, eq:'Chain Mail, Longsword, Shield', altGold:130, levels:{1:['Fighting Style','Second Wind']}, subclasses:[{id:'champion',name:'Champion'},{id:'battlemaster',name:'Battle Master'}]},
+  {id:'monk',name:'Monk', bg:'linear-gradient(135deg, #37738c, #162f3a)', hitDie:8, eq:'Spear, 5 Darts', altGold:20, levels:{1:['Martial Arts','Unarmored Defense']}, subclasses:[{id:'openhand',name:'Warrior of the Open Hand'},{id:'shadow',name:'Warrior of Shadow'}]},
+  {id:'paladin',name:'Paladin', bg:'linear-gradient(135deg, #b08d3e, #4a3a19)', hitDie:10, casterType:'half', spellAbility:'cha', eq:'Chain Mail, Longsword, Shield', altGold:130, levels:{1:['Spellcasting','Lay on Hands']}, subclasses:[{id:'devotion',name:'Oath of Devotion'},{id:'vengeance',name:'Oath of Vengeance'}]},
+  {id:'ranger',name:'Ranger', bg:'linear-gradient(135deg, #38543d, #172319)', hitDie:10, casterType:'half', spellAbility:'wis', eq:'Studded Leather, Scimitar, Longbow', altGold:130, levels:{1:['Spellcasting','Hunter\'s Mark']}, subclasses:[{id:'hunter',name:'Hunter'},{id:'gloom',name:'Gloom Stalker'}]},
+  {id:'rogue',name:'Rogue', bg:'linear-gradient(135deg, #4c5257, #1f2224)', hitDie:8, eq:'Leather Armor, Rapier, Shortbow', altGold:110, levels:{1:['Sneak Attack','Expertise']}, subclasses:[{id:'thief',name:'Thief'},{id:'assassin',name:'Assassin'}]},
+  {id:'sorcerer',name:'Sorcerer', bg:'linear-gradient(135deg, #9c2e2e, #421313)', hitDie:6, casterType:'full', spellAbility:'cha', eq:'Spear, 2 Daggers', altGold:90, levels:{1:['Spellcasting','Innate Magic']}, subclasses:[{id:'draconic',name:'Draconic Bloodline'},{id:'wildmagic',name:'Wild Magic'}]},
+  {id:'warlock',name:'Warlock', bg:'linear-gradient(135deg, #5c2c75, #261230)', hitDie:8, casterType:'pact', spellAbility:'cha', eq:'Leather Armor, Light Crossbow', altGold:100, levels:{1:['Pact Magic','Eldritch Invocations']}, subclasses:[{id:'fiend',name:'Fiend Patron'},{id:'archfey',name:'Archfey Patron'}]},
+  {id:'wizard',name:'Wizard', bg:'linear-gradient(135deg, #27477d, #101d33)', hitDie:6, casterType:'full', spellAbility:'int', eq:'Quarterstaff, Spellbook', altGold:90, levels:{1:['Spellcasting','Arcane Recovery']}, subclasses:[{id:'evoker',name:'Evoker'},{id:'illusionist',name:'Illusionist'}]}
 ];
 
-const SPELL_LIMITS={ 'bard':{cantrips:[2,2,2],spells:[4,5,6]}, 'cleric':{cantrips:[3,3,3],spells:[4,5,6]}, 'wizard':{cantrips:[3,3,3],spells:[4,5,6]} };
+const SPELL_LIMITS={ 'bard':{cantrips:[2,2,2],spells:[4,5,6]}, 'cleric':{cantrips:[3,3,3],spells:[4,5,6]}, 'druid':{cantrips:[2,2,2],spells:[4,5,6]}, 'paladin':{cantrips:[0,0,0],spells:[2,3,4]}, 'ranger':{cantrips:[0,0,0],spells:[2,3,4]}, 'sorcerer':{cantrips:[4,4,4],spells:[2,3,4]}, 'warlock':{cantrips:[2,2,2],spells:[2,3,4]}, 'wizard':{cantrips:[3,3,3],spells:[4,5,6]} };
 const ABILITIES=['str','dex','con','int','wis','cha'];
 
 /* =========================================
@@ -442,10 +478,10 @@ const ABILITIES=['str','dex','con','int','wis','cha'];
 ========================================= */
 
 window.state = {
-  version: "21.0", species: null, background: null, classes: {}, subclasses: {}, name: '',alignment: 'Neutral',
+  version: "22.0", species: null, background: null, classes: {}, subclasses: {}, name: '', playerName: '', alignment: 'Neutral',
   xp: 0, hpRolls: [], statMethod: 'pointbuy', statsPB: { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 }, sourceArray: [],
-  assignments: { str: null, dex: null, con: null, int: null, wis: null, cha: null },
-  currentHp: null, inventory: { armor: 'none', shield: false, weapons: [], currency: { gp: 0 } },
+  assignments: { str: null, dex: null, con: null, int: null, wis: null, cha: null }, eqMode: 'standard',
+  currentHp: null, tempHp: '', deathSaves: {s:0, f:0}, inventory: { armor: 'none', shield: false, weapons: [], currency: { gp: 0 } },
   selectedSpells: [], apiSpellsList: null, usedSpellSlots: {1:0, 2:0, pact:0}
 };
 
@@ -460,11 +496,8 @@ window.getBaseStat = function(ab) {
   if(window.state.assignments[ab]!==null) return window.state.sourceArray[window.state.assignments[ab]];
   return 0;
 };
-window.getPointsRemain = function() {
-  let s=0; const c={8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9};
-  for(let a of ABILITIES) s+=c[window.state.statsPB[a]]||0;
-  return 27-s;
-};
+window.getStatCost = function(score) { const costs = {8:0, 9:1, 10:2, 11:3, 12:4, 13:5, 14:7, 15:9}; return costs[score] || 0; };
+window.getPointsRemain = function() { let s=0; for(let a of ABILITIES) s+=window.getStatCost(window.state.statsPB[a]); return 27-s; };
 window.getMaxHP = function() {
   let con = window.getBaseStat('con'); if(con===0) con=10;
   let mod = Math.floor((con-10)/2);
@@ -477,8 +510,8 @@ window.getMaxHP = function() {
 ========================================= */
 
 window.renderExtraInfo = function(type, item) {
-  if (type==='species') return `<div style="font-size:0.8rem; color:var(--red);">${item.traits.join(', ')}</div>`;
-  if (type==='background') return `<div style="font-size:0.8rem; color:var(--red);">+2/+1, ${item.feat}</div>`;
+  if (type==='species') return `<div style="font-size:0.85rem; color:var(--red); margin-top:5px;"><strong>Traits:</strong> ${item.traits.join(', ')}</div>`;
+  if (type==='background') return `<div style="font-size:0.85rem; color:var(--red); margin-top:5px;"><strong>Boosts:</strong> ${Object.keys(item.bonuses).map(k=>`+${item.bonuses[k]} ${k.toUpperCase()}`).join(', ')}<br><strong>Feat:</strong> ${item.feat}</div>`;
   return '';
 };
 
@@ -486,9 +519,9 @@ window.renderGrid = function(containerId, dataArray, stateKey) {
   const container = document.getElementById(containerId);
   if(!container) return;
   container.innerHTML = dataArray.map(item => `
-    <div class="card ${window.state[stateKey]===item.id?'selected':''}" onclick="window.selectItem('${stateKey}', '${item.id}')" id="card-${stateKey}-${item.id}">
-      ${item.img ? `<img src="${item.img}" alt="${item.name}" class="card-hero-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div style="display:none; height:180px; background:#1a0f00; color:var(--gold); flex-direction:column; align-items:center; justify-content:center; border-bottom: 2px solid var(--border); text-align:center; padding:15px;"><span style="font-size:2rem;">🖼️</span><span style="font-size:0.7rem; color:#ccc;">${item.img}</span></div>` : ''}
-      ${item.icon && !item.img ? `<div class="card-hero" style="background: ${item.bg};"><span class="hero-icon">${item.icon}</span></div>` : ''}
+    <div class="card ${window.state[stateKey]===item.id?'selected':''}" onclick="window.selectItem('${stateKey}', '${item.id}')">
+      ${item.img ? `<img src="${item.img}" class="card-hero-img" onerror="this.style.display='none';"><div style="display:${item.img?'none':'flex'}; height:180px; background:#1a0f00; color:var(--gold); flex-direction:column; align-items:center; justify-content:center; border-bottom: 2px solid var(--border); padding:15px;"><span style="font-size:2rem;">🖼️</span><span style="font-size:0.7rem; color:#ccc;">${item.img}</span></div>` : ''}
+      ${!item.img && item.bg ? `<div class="card-hero" style="background: ${item.bg};"><span class="epic-class-icon">${item.name.charAt(0)}</span></div>` : ''}
       <div class="card-content">
           <div class="card-title">${item.name}</div>
           ${window.renderExtraInfo(stateKey, item)}
@@ -497,11 +530,7 @@ window.renderGrid = function(containerId, dataArray, stateKey) {
   `).join('');
 };
 
-window.selectItem = function(k, id) {
-  window.state[k]=id;
-  window.renderGrid(k==='species'?'species-grid':'backgrounds-grid', k==='species'?SPECIES:BACKGROUNDS, k);
-  window.updateBottomNav();
-};
+window.selectItem = function(k, id) { window.state[k]=id; window.init(); };
 
 window.selectPrimaryClass = function(id) {
     window.state.classes={ [id]: 1 };
@@ -510,44 +539,141 @@ window.selectPrimaryClass = function(id) {
     window.init();
 };
 
+window.renderSubclassPanel = function() {
+    const container = document.getElementById('subclass-sections');
+    const pCls = window.getPrimaryClass();
+    const cls = CLASSES.find(c=>c.id===pCls);
+    if(cls && cls.subclasses && window.state.classes[pCls] >= 3) {
+        container.innerHTML = `<div class="grid-cards">` + cls.subclasses.map(sub => `
+            <div class="card ${window.state.subclasses[pCls]===sub.id?'selected':''}" onclick="window.state.subclasses['${pCls}']='${sub.id}'; window.renderSubclassPanel(); window.updateBottomNav();">
+                <div class="card-content"><div class="card-title">${sub.name}</div></div>
+            </div>
+        `).join('') + `</div>`;
+    } else { container.innerHTML = `<p>Reach Level 3 to unlock your subclass!</p>`; }
+};
+
+window.renderEquipmentPanel = function() {
+    const cls = CLASSES.find(c=>c.id===window.getPrimaryClass());
+    if(!cls) return;
+    document.getElementById('equipment-options').innerHTML = `
+      <div class="card ${window.state.eqMode==='standard'?'selected':''}" onclick="window.state.eqMode='standard'; window.renderEquipmentPanel();">
+        <div class="card-content"><div class="card-title">📦 Standard Package</div><p>50 GP (Background) + ${cls.eq}</p></div>
+      </div>
+      <div class="card ${window.state.eqMode==='gold'?'selected':''}" onclick="window.state.eqMode='gold'; window.renderEquipmentPanel();">
+        <div class="card-content"><div class="card-title">💰 Roll for Gold</div><p>50 GP (Background) + ${cls.altGold} GP (Class)</p></div>
+      </div>
+    `;
+};
+
 /* =========================================
-   4. NAVIGATION & STARTUP
+   4. STATS & LEVEL UP
+========================================= */
+
+window.handleMethodChange = function(v) { window.state.statMethod=v; window.state.assignments={str:null, dex:null, con:null, int:null, wis:null, cha:null}; if(v==='standard') window.state.sourceArray=[15,14,13,12,10,8]; else window.state.sourceArray=[]; window.renderStatsPanel(); };
+window.rollStats = function() { window.state.sourceArray = Array.from({length:6}, ()=> [1,2,3,4].map(()=>Math.floor(Math.random()*6)+1).sort((a,b)=>a-b).slice(1).reduce((a,b)=>a+b)).sort((a,b)=>b-a); window.renderStatsPanel(); };
+window.changePBStat = function(ab, d) { let n=window.state.statsPB[ab]+d; if(n<8||n>15) return; if(window.getPointsRemain()-(window.getStatCost(n)-window.getStatCost(window.state.statsPB[ab])) < 0) return; window.state.statsPB[ab]=n; window.renderStatsPanel(); };
+
+window.renderStatsPanel = function() {
+    const head = document.getElementById('stats-header-area'); const rows = document.getElementById('stats-rows');
+    if(window.state.statMethod==='pointbuy') {
+        head.innerHTML = `<strong>Points: ${window.getPointsRemain()}</strong>`;
+        rows.innerHTML = ABILITIES.map(ab=>`<div class="stat-row"><div class="stat-name">${ab.toUpperCase()}</div><div class="stat-control"><button class="stat-btn" onclick="window.changePBStat('${ab}',-1)">-</button><span class="stat-val">${window.state.statsPB[ab]}</span><button class="stat-btn" onclick="window.changePBStat('${ab}',1)">+</button></div></div>`).join('');
+    } else {
+        head.innerHTML = window.state.sourceArray.length ? `Scores: ${window.state.sourceArray.join(', ')}` : `<button class="action-btn" onclick="window.rollStats()">Roll 4d6</button>`;
+        rows.innerHTML = ABILITIES.map(ab=>{
+            let opts = `<option value="">--</option>` + window.state.sourceArray.map((s,i)=>`<option value="${i}" ${window.state.assignments[ab]===i?'selected':''}>${s}</option>`).join('');
+            return `<div class="stat-row"><div class="stat-name">${ab.toUpperCase()}</div><select class="input-text" style="width:100px" onchange="window.state.assignments['${ab}']=this.value?parseInt(this.value):null; window.renderStatsPanel();">${opts}</select></div>`;
+        }).join('');
+    }
+    window.updateBottomNav();
+};
+
+/* =========================================
+   5. NAVIGATION & STARTUP
 ========================================= */
 
 window.navTo = function(id) {
   window.currentPanelIndex = window.PANELS.indexOf(id);
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById(`panel-${id}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>{ if(b.innerText.toLowerCase().includes(id.replace('class',' class'))) b.classList.add('active'); });
+
+  if(id==='subclass') window.renderSubclassPanel();
+  if(id==='equipment') window.renderEquipmentPanel();
+  if(id==='stats') window.renderStatsPanel();
+  if(id==='sheet') window.renderOfficialSheet();
+  
   window.updateBottomNav();
 };
 
-window.updateBottomNav = function() {
-    const btnNext = document.getElementById('btn-next');
-    if(!btnNext) return;
+window.isStepValid = function() {
     let p = window.PANELS[window.currentPanelIndex];
-    let valid = true;
-    if(p==='species') valid = window.state.species !== null;
-    if(p==='background') valid = window.state.background !== null;
-    if(p==='class') valid = window.getPrimaryClass() !== null;
-    btnNext.disabled = !valid;
-    document.getElementById('step-indicator').innerText = `Step ${window.currentPanelIndex+1} / 9`;
+    if (p === 'species') return window.state.species !== null;
+    if (p === 'background') return window.state.background !== null;
+    if (p === 'class') return window.getPrimaryClass() !== null;
+    if (p === 'subclass') { let c = window.getPrimaryClass(); return !c || window.state.classes[c] < 3 || window.state.subclasses[c] != null; }
+    if (p === 'stats') { if (window.state.statMethod === 'pointbuy') return window.getPointsRemain() === 0; return Object.values(window.state.assignments).every(v => v !== null); }
+    if (p === 'equipment') return true;
+    if (p === 'details') return window.state.name.trim() !== '';
+    return true;
 };
 
-window.goNext = function() { window.navTo(window.PANELS[window.currentPanelIndex + 1]); };
-window.goPrev = function() { window.navTo(window.PANELS[window.currentPanelIndex - 1]); };
+window.updateBottomNav = function() {
+    const btnPrev = document.getElementById('btn-prev'); const btnNext = document.getElementById('btn-next');
+    if(!btnPrev || !btnNext) return;
+    btnPrev.style.visibility = (window.currentPanelIndex === 0) ? 'hidden' : 'visible';
+    btnNext.disabled = !window.isStepValid();
+
+    let pClass = window.getPrimaryClass();
+    let hasLvl3 = pClass && window.state.classes[pClass] >= 3;
+    let isCaster = pClass && CLASSES.find(c=>c.id===pClass)?.casterType;
+
+    document.getElementById('nav-subclass').classList.toggle('hidden', !hasLvl3);
+    document.getElementById('nav-spells').classList.toggle('hidden', !isCaster);
+
+    let nextStepIdx = window.currentPanelIndex + 1;
+    while(window.PANELS[nextStepIdx] === 'subclass' && !hasLvl3) nextStepIdx++;
+    while(window.PANELS[nextStepIdx] === 'spells' && !isCaster) nextStepIdx++;
+
+    btnNext.onclick = () => window.navTo(window.PANELS[nextStepIdx]);
+    
+    let prevStepIdx = window.currentPanelIndex - 1;
+    while(window.PANELS[prevStepIdx] === 'subclass' && !hasLvl3) prevStepIdx--;
+    while(window.PANELS[prevStepIdx] === 'spells' && !isCaster) prevStepIdx--;
+
+    btnPrev.onclick = () => window.navTo(window.PANELS[prevStepIdx]);
+
+    if(window.PANELS[window.currentPanelIndex] === 'sheet') document.getElementById('bottom-nav').style.display='none';
+    else document.getElementById('bottom-nav').style.display='flex';
+};
+
+window.goNext = function() { document.getElementById('btn-next').click(); };
+window.goPrev = function() { document.getElementById('btn-prev').click(); };
+
+window.renderOfficialSheet = function() {
+    const s = document.getElementById('sheet-render'); if(!s) return;
+    const cls = CLASSES.find(c=>c.id===window.getPrimaryClass());
+    document.getElementById('display-level').innerText = window.getTotalLevel();
+    s.innerHTML = `
+      <div style="background:#fff; padding:20px; border-radius:8px; color:#000;">
+        <h2 style="color:var(--red); font-family:'Cinzel';">${window.state.name || 'Unnamed'}</h2>
+        <p><strong>Level:</strong> ${window.getTotalLevel()} | <strong>Class:</strong> ${cls?cls.name:'-'} | <strong>Species:</strong> ${window.state.species} | <strong>Background:</strong> ${window.state.background}</p>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+           <div style="flex:1; background:#f0f0f0; padding:15px; text-align:center; border-radius:8px;"><strong>HP:</strong> <br><span style="font-size:2rem;">${window.getMaxHP()}</span></div>
+           <div style="flex:1; background:#f0f0f0; padding:15px; text-align:center; border-radius:8px;"><strong>Proficiency:</strong> <br><span style="font-size:2rem;">+${window.getProficiencyBonus(window.getTotalLevel())}</span></div>
+        </div>
+        <p style="margin-top:20px; color:#555;"><i>(The full visual sheet is ready, add equipment and spells in the previous steps to see them reflected in play).</i></p>
+      </div>
+    `;
+};
 
 window.init = function() {
   window.renderGrid('species-grid', SPECIES, 'species');
   window.renderGrid('backgrounds-grid', BACKGROUNDS, 'background');
-  const container = document.getElementById('classes-grid');
-  if(container) {
-      container.innerHTML = CLASSES.map(item=>`
-        <div class="card ${window.getPrimaryClass()===item.id?'selected':''}" onclick="window.selectPrimaryClass('${item.id}')">
-          <div class="card-hero" style="background: ${item.bg};"><span class="hero-icon">${item.icon}</span></div>
-          <div class="card-content"><div class="card-title">${item.name}</div></div>
-        </div>
-      `).join('');
-  }
+  window.renderGrid('classes-grid', CLASSES, 'charClass');
+  window.renderStatsPanel();
+  window.renderEquipmentPanel();
   window.updateBottomNav();
 };
 
