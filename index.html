@@ -22,6 +22,10 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;800&display=swap');
     .font-serif-dnd { font-family: 'Crimson Pro', serif; }
+    /* Para ocultar las flechas en los inputs numéricos de monedas */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
   </style>
 </head>
 <body class="bg-[#F4F1EA] text-stone-900 font-sans antialiased">
@@ -57,6 +61,8 @@
     const Eye = createIcon('fa-eye');
     const SaveIcon = createIcon('fa-floppy-disk');
     const UploadIcon = createIcon('fa-folder-open');
+    const ShoppingCart = createIcon('fa-cart-shopping');
+    const Coins = createIcon('fa-coins');
 
     // ==========================================
     // 1. CONSTANTES Y BASES DE DATOS (ESTÁTICAS)
@@ -175,54 +181,95 @@
       { name: 'Resiliente', desc: 'Aumenta un atributo en 1 y ganas competencia en tiradas de salvación de ese atributo.' }
     ];
 
+    // Precios añadidos internamente en PC (Piezas de Cobre) para matemáticas perfectas. 1 PO = 100 PC.
     const ITEM_COMPENDIUM = {
       weapons: [
-        { id: 'w_bas', name: 'Bastón', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1 },
-        { id: 'w_dag', name: 'Daga', type: 'simple', damage: '1d4', dmgType: 'perforante', prop: 'finesse', hands: 1 },
-        { id: 'w_gar', name: 'Garrote', type: 'simple', damage: '1d4', dmgType: 'contundente', prop: 'str', hands: 1 },
-        { id: 'w_hch', name: 'Hacha de Mano', type: 'simple', damage: '1d6', dmgType: 'cortante', prop: 'str', hands: 1 },
-        { id: 'w_jab', name: 'Jabalina', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1 },
-        { id: 'w_lan', name: 'Lanza', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1 },
-        { id: 'w_maz', name: 'Maza', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1 },
-        { id: 'w_ac', name: 'Arco Corto', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'dex', hands: 2 },
-        { id: 'w_bal', name: 'Ballesta Ligera', type: 'simple', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2 },
-        { id: 'w_ala', name: 'Alabarda', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2 },
-        { id: 'w_cim', name: 'Cimitarra', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1 },
-        { id: 'w_ec', name: 'Espada Corta', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1 },
-        { id: 'w_el', name: 'Espada Larga', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1 },
-        { id: 'w_esp', name: 'Espadón', type: 'martial', damage: '2d6', dmgType: 'cortante', prop: 'str', hands: 2 },
-        { id: 'w_est', name: 'Estoque', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'finesse', hands: 1 },
-        { id: 'w_gha', name: 'Gran Hacha', type: 'martial', damage: '1d12', dmgType: 'cortante', prop: 'str', hands: 2 },
-        { id: 'w_guj', name: 'Guja', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2 },
-        { id: 'w_hba', name: 'Hacha de Batalla', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1 },
-        { id: 'w_lat', name: 'Látigo', type: 'martial', damage: '1d4', dmgType: 'cortante', prop: 'finesse', hands: 1 },
-        { id: 'w_mgu', name: 'Martillo de Guerra', type: 'martial', damage: '1d8', dmgType: 'contundente', prop: 'str', hands: 1 },
-        { id: 'w_mzo', name: 'Mazo', type: 'martial', damage: '2d6', dmgType: 'contundente', prop: 'str', hands: 2 },
-        { id: 'w_al', name: 'Arco Largo', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2 },
+        { id: 'w_bas', name: 'Bastón', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1, costCP: 20 },
+        { id: 'w_dag', name: 'Daga', type: 'simple', damage: '1d4', dmgType: 'perforante', prop: 'finesse', hands: 1, costCP: 200 },
+        { id: 'w_gar', name: 'Garrote', type: 'simple', damage: '1d4', dmgType: 'contundente', prop: 'str', hands: 1, costCP: 10 },
+        { id: 'w_hch', name: 'Hacha de Mano', type: 'simple', damage: '1d6', dmgType: 'cortante', prop: 'str', hands: 1, costCP: 500 },
+        { id: 'w_jab', name: 'Jabalina', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1, costCP: 50 },
+        { id: 'w_lan', name: 'Lanza', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1, costCP: 100 },
+        { id: 'w_maz', name: 'Maza', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1, costCP: 500 },
+        { id: 'w_ac', name: 'Arco Corto', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'dex', hands: 2, costCP: 2500 },
+        { id: 'w_bal', name: 'Ballesta Ligera', type: 'simple', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2, costCP: 2500 },
+        { id: 'w_ala', name: 'Alabarda', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2, costCP: 2000 },
+        { id: 'w_cim', name: 'Cimitarra', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1, costCP: 2500 },
+        { id: 'w_ec', name: 'Espada Corta', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1, costCP: 1000 },
+        { id: 'w_el', name: 'Espada Larga', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1, costCP: 1500 },
+        { id: 'w_esp', name: 'Espadón', type: 'martial', damage: '2d6', dmgType: 'cortante', prop: 'str', hands: 2, costCP: 5000 },
+        { id: 'w_est', name: 'Estoque', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'finesse', hands: 1, costCP: 2500 },
+        { id: 'w_gha', name: 'Gran Hacha', type: 'martial', damage: '1d12', dmgType: 'cortante', prop: 'str', hands: 2, costCP: 3000 },
+        { id: 'w_guj', name: 'Guja', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2, costCP: 2000 },
+        { id: 'w_hba', name: 'Hacha de Batalla', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1, costCP: 1000 },
+        { id: 'w_lat', name: 'Látigo', type: 'martial', damage: '1d4', dmgType: 'cortante', prop: 'finesse', hands: 1, costCP: 200 },
+        { id: 'w_mgu', name: 'Martillo de Guerra', type: 'martial', damage: '1d8', dmgType: 'contundente', prop: 'str', hands: 1, costCP: 1500 },
+        { id: 'w_mzo', name: 'Mazo', type: 'martial', damage: '2d6', dmgType: 'contundente', prop: 'str', hands: 2, costCP: 1000 },
+        { id: 'w_al', name: 'Arco Largo', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2, costCP: 5000 },
       ],
       armor: [
-        { id: 'a_c', name: 'Armadura de Cuero', type: 'light', ac: 11, maxDex: 99 },
-        { id: 'a_ct', name: 'Cuero Tachonado', type: 'light', ac: 12, maxDex: 99 },
-        { id: 'a_pi', name: 'Pieles', type: 'medium', ac: 12, maxDex: 2 },
-        { id: 'a_cm', name: 'Camisote de Mallas', type: 'medium', ac: 13, maxDex: 2 },
-        { id: 'a_esc', name: 'Cota de Escamas', type: 'medium', ac: 14, maxDex: 2 },
-        { id: 'a_co', name: 'Coraza', type: 'medium', ac: 14, maxDex: 2 },
-        { id: 'a_mp', name: 'Media Placas', type: 'medium', ac: 15, maxDex: 2 },
-        { id: 'a_can', name: 'Cota de Anillas', type: 'heavy', ac: 14, maxDex: 0 },
-        { id: 'a_cma', name: 'Cota de Malla', type: 'heavy', ac: 16, maxDex: 0 },
-        { id: 'a_pl', name: 'Placas', type: 'heavy', ac: 18, maxDex: 0 },
+        { id: 'a_c', name: 'Armadura de Cuero', type: 'light', ac: 11, maxDex: 99, costCP: 1000 },
+        { id: 'a_ct', name: 'Cuero Tachonado', type: 'light', ac: 12, maxDex: 99, costCP: 4500 },
+        { id: 'a_pi', name: 'Pieles', type: 'medium', ac: 12, maxDex: 2, costCP: 1000 },
+        { id: 'a_cm', name: 'Camisote de Mallas', type: 'medium', ac: 13, maxDex: 2, costCP: 5000 },
+        { id: 'a_esc', name: 'Cota de Escamas', type: 'medium', ac: 14, maxDex: 2, costCP: 5000 },
+        { id: 'a_co', name: 'Coraza', type: 'medium', ac: 14, maxDex: 2, costCP: 40000 },
+        { id: 'a_mp', name: 'Media Placas', type: 'medium', ac: 15, maxDex: 2, costCP: 75000 },
+        { id: 'a_can', name: 'Cota de Anillas', type: 'heavy', ac: 14, maxDex: 0, costCP: 3000 },
+        { id: 'a_cma', name: 'Cota de Malla', type: 'heavy', ac: 16, maxDex: 0, costCP: 7500 },
+        { id: 'a_pl', name: 'Placas', type: 'heavy', ac: 18, maxDex: 0, costCP: 150000 },
       ],
-      shields: [{ id: 's_esc', name: 'Escudo', type: 'shield', acBonus: 2, hands: 1 }],
-      magic: [{ id: 'm_an1', name: 'Anillo de Protección', type: 'ring', desc: '+1 CA' }, { id: 'm_bo1', name: 'Botas Élficas', type: 'boots', desc: 'Ventaja Sigilo' }]
+      shields: [{ id: 's_esc', name: 'Escudo', type: 'shield', acBonus: 2, hands: 1, costCP: 1000 }],
+      magic: [
+        { id: 'm_an1', name: 'Anillo de Protección', type: 'ring', desc: '+1 CA', costCP: 50000 }, 
+        { id: 'm_bo1', name: 'Botas Élficas', type: 'boots', desc: 'Ventaja Sigilo', costCP: 25000 },
+        { id: 'm_poc1', name: 'Poción de Curación', type: 'consumable', desc: 'Cura 2d4+2', costCP: 5000 }
+      ]
     };
 
-    // --- UTILIDADES GLOBALES ---
+    const CLASS_STARTING_PACKS = {
+      'Bárbaro': ['w_gha', 'w_hch', 'w_hch', 'w_jab', 'w_jab', 'w_jab', 'w_jab'],
+      'Bardo': ['w_est', 'w_dag', 'a_c'],
+      'Brujo': ['w_ec', 'w_dag', 'w_dag', 'a_c'],
+      'Clérigo': ['w_maz', 'a_esc', 's_esc'],
+      'Druida': ['w_cim', 'w_bas', 'a_c', 's_esc'],
+      'Explorador': ['w_ec', 'w_ec', 'w_al', 'a_esc'],
+      'Guerrero': ['w_el', 'a_cma', 's_esc', 'w_bal'],
+      'Hechicero': ['w_dag', 'w_dag', 'w_bas'],
+      'Mago': ['w_bas', 'w_dag'],
+      'Monje': ['w_ec', 'w_dag', 'w_dag'],
+      'Paladín': ['w_el', 'a_cma', 's_esc', 'w_jab', 'w_jab'],
+      'Pícaro': ['w_est', 'w_ac', 'w_dag', 'w_dag', 'a_c']
+    };
+
+    // --- UTILIDADES GLOBALES Y ECONOMÍA ---
     function getMod(score) {
       return Math.floor((score - 10) / 2);
     }
     function formatMod(mod) {
       return mod >= 0 ? `+${mod}` : `${mod}`;
     }
+
+    const currencyToCP = (c) => (c.pp||0)*1000 + (c.gp||0)*100 + (c.ep||0)*50 + (c.sp||0)*10 + (c.cp||0);
+    
+    const cpToCurrency = (totalCP) => {
+      let r = totalCP;
+      // Ignoramos Platino y Electrum en el cambio para mantener el oro (PO) como base y no confundir.
+      const gp = Math.floor(r / 100); r %= 100;
+      const sp = Math.floor(r / 10); r %= 10;
+      const cp = r;
+      return { pp: 0, gp, ep: 0, sp, cp };
+    };
+
+    const formatPrice = (cpCost) => {
+      if (!cpCost) return "Gratis";
+      const { gp, sp, cp } = cpToCurrency(cpCost); 
+      let str = [];
+      if (gp > 0) str.push(`${gp} PO`);
+      if (sp > 0) str.push(`${sp} PP`);
+      if (cp > 0) str.push(`${cp} PC`);
+      return str.join(', ');
+    };
 
     const getInitialState = () => ({
       activeTab: 'Constructor',
@@ -231,8 +278,11 @@
       baseStats: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
       asi: { plus2: 'str', plus1: 'con' },
       combat: { hpCurrent: 0, hpTemp: 0 },
-      equipment: { head: null, chest: ITEM_COMPENDIUM.armor[1], mainHand: ITEM_COMPENDIUM.weapons[12], offHand: ITEM_COMPENDIUM.shields[0], ring1: null },
-      spells: [], usedResources: {}, manualSaves: [], manualSkills: [], customResistances: '', feats: []
+      equipment: { head: null, chest: null, mainHand: null, offHand: null, ring1: null },
+      inventory: [], 
+      currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+      spells: [], usedResources: {}, manualSaves: [], manualSkills: [], customResistances: '', feats: [],
+      hasClaimedStartingGear: false
     });
 
     // ==========================================
@@ -244,6 +294,7 @@
       const [apiSpells, setApiSpells] = useState([]);
       const [isLoadingSpells, setIsLoadingSpells] = useState(false);
       const [dndDatabase, setDndDatabase] = useState(null);
+      const [storeMessage, setStoreMessage] = useState(null); 
       
       const [showLevelUpModal, setShowLevelUpModal] = useState(false);
       const [lvlUpSelectedClass, setLvlUpSelectedClass] = useState('Guerrero');
@@ -290,16 +341,89 @@
           try {
             const importedData = JSON.parse(event.target.result);
             if (importedData && importedData.header && importedData.classes) {
+              if(!importedData.inventory) importedData.inventory = [];
+              if(!importedData.currency) importedData.currency = { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 };
               setData(importedData);
-            } else {
-              alert("El archivo no parece ser un personaje válido.");
             }
-          } catch (err) {
-            alert("Error al leer el archivo JSON.");
-          }
+          } catch (err) {}
         };
         reader.readAsText(file);
         e.target.value = ''; 
+      };
+
+      const showToast = (msg) => {
+        setStoreMessage(msg);
+        setTimeout(() => setStoreMessage(null), 3000);
+      }
+
+      // --- MECÁNICAS DE TIENDA E INVENTARIO ---
+      const handleBuyItem = (item) => {
+        const currentCP = currencyToCP(data.currency);
+        if (currentCP >= item.costCP) {
+          const newInventory = [...data.inventory, { ...item, instanceId: Date.now() + Math.random() }];
+          setData(prev => ({
+            ...prev,
+            currency: cpToCurrency(currentCP - item.costCP),
+            inventory: newInventory
+          }));
+          showToast(`¡Compraste ${item.name}!`);
+        } else {
+          showToast(`No te alcanza. ${item.name} cuesta ${formatPrice(item.costCP)}.`);
+        }
+      };
+
+      const handleSellItem = (invIndex) => {
+        const itemToSell = data.inventory[invIndex];
+        const sellPriceCP = Math.floor(itemToSell.costCP / 2); 
+        const currentCP = currencyToCP(data.currency);
+        
+        let newEquip = { ...data.equipment };
+        Object.keys(newEquip).forEach(key => {
+          if (newEquip[key] && newEquip[key].instanceId === itemToSell.instanceId) {
+             newEquip[key] = null;
+          }
+        });
+
+        const newInventory = data.inventory.filter((_, i) => i !== invIndex);
+        setData(prev => ({
+          ...prev,
+          currency: cpToCurrency(currentCP + sellPriceCP),
+          inventory: newInventory,
+          equipment: newEquip
+        }));
+        showToast(`Vendiste ${itemToSell.name} por ${formatPrice(sellPriceCP)}.`);
+      };
+
+      const updateCurrency = (coin, val) => {
+        setData(prev => ({ ...prev, currency: { ...prev.currency, [coin]: Math.max(0, parseInt(val) || 0) } }));
+      };
+
+      const claimStartingGear = (type) => {
+        if (data.hasClaimedStartingGear) return;
+        
+        setData(prev => {
+          let newInv = [...prev.inventory];
+          let newCurrency = { ...prev.currency };
+          
+          if (type === 'gold') {
+             newCurrency.gp += 150;
+          } else if (type === 'class') {
+             const packIds = CLASS_STARTING_PACKS[primaryClass] || [];
+             packIds.forEach(id => {
+               let foundItem = null;
+               Object.values(ITEM_COMPENDIUM).forEach(category => {
+                 const match = category.find(i => i.id === id);
+                 if(match) foundItem = match;
+               });
+               if (foundItem) {
+                 newInv.push({ ...foundItem, instanceId: Date.now() + Math.random() });
+               }
+             });
+             newCurrency.gp += 10;
+          }
+          
+          return { ...prev, inventory: newInv, currency: newCurrency, hasClaimedStartingGear: true };
+        });
       };
 
       // --- CÁLCULOS CENTRALIZADOS ---
@@ -403,7 +527,7 @@
       if (data.header.race === 'Tiefling') autoResistances.push('Fuego');
       if (isBarb) autoResistances.push('Físico (Sólo en Furia)');
 
-      // --- HANDLERS ---
+      // --- HANDLERS BÁSICOS ---
       const updateHeader = (f, v) => setData(prev => ({ ...prev, header: { ...prev.header, [f]: v } }));
       const updateBaseStat = (s, v) => setData(prev => ({ ...prev, baseStats: { ...prev.baseStats, [s]: Number(v) } }));
       
@@ -413,8 +537,7 @@
           nc[0].name = v; 
           nc[0].hpRolls = [CLASSES_2024[v].hd]; 
           nc[0].subclass = '';
-          const startEquip = v === 'Mago' ? ITEM_COMPENDIUM.weapons.find(w=>w.id==='w_bas') : ITEM_COMPENDIUM.weapons[0];
-          return { ...prev, classes: nc, spells: [], equipment: { ...prev.equipment, mainHand: startEquip } };
+          return { ...prev, classes: nc, spells: [] };
         });
       };
 
@@ -435,11 +558,12 @@
         setData(prev => ({ ...prev, baseStats: ns }));
       };
 
-      const equipItem = (slot, item) => {
+      const equipItem = (slot, instanceId) => {
         setData(prev => {
-          const newEq = { ...prev.equipment, [slot]: item };
-          if (item?.hands === 2 && slot === 'mainHand') newEq.offHand = null;
-          if (item?.type === 'shield' && newEq.mainHand?.hands === 2) newEq.mainHand = null;
+          const itemToEquip = prev.inventory.find(i => i.instanceId == instanceId) || null;
+          const newEq = { ...prev.equipment, [slot]: itemToEquip };
+          if (itemToEquip?.hands === 2 && slot === 'mainHand') newEq.offHand = null;
+          if (itemToEquip?.type === 'shield' && newEq.mainHand?.hands === 2) newEq.mainHand = null;
           return { ...prev, equipment: newEq };
         });
       };
@@ -528,26 +652,34 @@
         setShowLevelUpModal(false);
       };
 
-      // --- FETCH API DE HECHIZOS Y BASE DE DATOS DND JSON ---
+      // --- FETCH API DE HECHIZOS (Con Paginación para abarcar todo el abecedario) ---
       useEffect(() => {
-        fetch('./dnd_data.json')
-          .then(res => res.json())
-          .then(json => {
-             console.log("Base de datos D&D 2024 conectada.", json);
-             setDndDatabase(json);
-          })
-          .catch(err => {
-             console.log("Usando base de datos estática local (D&D 2024).", err);
-          });
-
         if (!isSpellcaster) return;
         setIsLoadingSpells(true);
         const mapEn = { 'Mago': 'Wizard', 'Paladín': 'Paladin', 'Bardo': 'Bard', 'Brujo': 'Warlock', 'Clérigo': 'Cleric', 'Druida': 'Druid', 'Explorador': 'Ranger', 'Hechicero': 'Sorcerer' };
         const classesEn = data.classes.filter(c => CLASSES_2024[c.name].spellcaster).map(c => mapEn[c.name]).filter(Boolean);
-        Promise.all(classesEn.map(en => fetch(`https://api.open5e.com/v1/spells/?dnd_class__icontains=${en}&limit=250`).then(res => res.json())))
-        .then(results => {
+        
+        const fetchSpellsForClass = async (className) => {
+          let url = `https://api.open5e.com/v1/spells/?dnd_class__icontains=${className}&limit=250`;
+          let results = [];
+          while (url) {
+            try {
+              const res = await fetch(url);
+              const json = await res.json();
+              results = results.concat(json.results);
+              url = json.next; 
+            } catch (e) {
+              console.error("Error obteniendo hechizos:", e);
+              url = null;
+            }
+          }
+          return results;
+        };
+
+        Promise.all(classesEn.map(en => fetchSpellsForClass(en)))
+        .then(resultsArray => {
           const all = []; const seen = new Set();
-          results.forEach(res => res.results.forEach(s => {
+          resultsArray.forEach(results => results.forEach(s => {
             if (!seen.has(s.name)) {
               seen.add(s.name);
               all.push({ id: s.slug, level: s.level_int || 0, name: s.name, shortDesc: (s.desc || "").substring(0, 80) + '...', fullDesc: s.desc || "" });
@@ -595,18 +727,20 @@
         );
       }
 
-      function renderEquipmentSelector(slot, title, itemsToPick) {
+      function renderEquipmentSelector(slot, title, filterTypes) {
+        const availableItems = data.inventory.filter(i => filterTypes.includes(i.type) || filterTypes.includes(i.id));
+
         return (
           <div className="mb-3">
             <label className="block text-[10px] font-bold uppercase text-stone-500 mb-1">{title}</label>
             <select 
-              className="w-full border border-[#E5DEC3] bg-white rounded p-1.5 text-xs focus:outline-none focus:border-[#D4AF37]"
-              value={data.equipment[slot] ? data.equipment[slot].id : ''}
-              onChange={(e) => equipItem(slot, itemsToPick.find(i => i.id === e.target.value) || null)}
+              className="w-full border border-[#E5DEC3] bg-white rounded p-2 text-xs font-bold font-serif text-stone-800 focus:outline-none focus:border-[#D4AF37] shadow-sm"
+              value={data.equipment[slot] ? data.equipment[slot].instanceId : ''}
+              onChange={(e) => equipItem(slot, e.target.value)}
             >
-              <option value="">-- Vacío --</option>
-              {itemsToPick.map(item => (
-                <option key={item.id} value={item.id}>
+              <option value="">-- Sin Equipar --</option>
+              {availableItems.map(item => (
+                <option key={item.instanceId} value={item.instanceId}>
                   {item.name} {item.damage ? `(${item.damage})` : ''} {item.ac ? `(CA ${item.ac})` : ''}
                 </option>
               ))}
@@ -726,6 +860,124 @@
                 <button onClick={confirmLevelUp} disabled={!canConfirm} className="px-6 py-2 bg-gradient-to-r from-[#701010] to-[#8B1515] text-white rounded-lg font-bold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed border border-[#D4AF37]/50 transition-all">Confirmar Nivel</button>
               </div>
             </div>
+          </div>
+        );
+      }
+
+      function renderStoreUI() {
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 animate-in fade-in">
+             {/* CATÁLOGO DE LA TIENDA */}
+             <div className="lg:col-span-7 space-y-5">
+               <div className="bg-white p-6 rounded-xl border border-[#E5DEC3] shadow-sm">
+                  <div className="flex justify-between items-center border-b-2 border-[#D4AF37]/30 pb-4 mb-4">
+                    <h3 className="font-bold font-serif text-xl uppercase text-[#701010] flex items-center gap-3 tracking-widest"><ShoppingCart size={24}/> Mercado Aventurero</h3>
+                  </div>
+
+                  {storeMessage && (
+                    <div className="bg-amber-100 text-amber-900 border border-amber-300 p-3 rounded-lg mb-4 text-sm font-bold text-center animate-pulse">
+                      {storeMessage}
+                    </div>
+                  )}
+
+                  {/* Armas */}
+                  <div className="mb-6">
+                    <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-3 border-b border-[#E5DEC3] pb-1">Armería - Armas</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {ITEM_COMPENDIUM.weapons.map(item => (
+                        <div key={item.id} className="flex justify-between items-center p-3 bg-[#F4F1EA]/50 border border-[#E5DEC3] rounded-lg hover:border-[#D4AF37] transition-all">
+                           <div>
+                             <p className="font-serif font-bold text-stone-800">{item.name}</p>
+                             <p className="text-[10px] text-stone-500 uppercase">{item.damage} • {item.dmgType}</p>
+                           </div>
+                           <button onClick={() => handleBuyItem(item)} className="bg-white border border-[#D4AF37] text-stone-700 hover:bg-amber-50 px-3 py-1.5 rounded-md text-xs font-black shadow-sm transition-colors flex flex-col items-center">
+                             <span>Comprar</span>
+                             <span className="text-[9px] text-amber-700">{formatPrice(item.costCP)}</span>
+                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Armaduras */}
+                  <div className="mb-6">
+                    <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-3 border-b border-[#E5DEC3] pb-1">Herrería - Armaduras y Escudos</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[...ITEM_COMPENDIUM.armor, ...ITEM_COMPENDIUM.shields].map(item => (
+                        <div key={item.id} className="flex justify-between items-center p-3 bg-[#F4F1EA]/50 border border-[#E5DEC3] rounded-lg hover:border-[#D4AF37] transition-all">
+                           <div>
+                             <p className="font-serif font-bold text-stone-800">{item.name}</p>
+                             <p className="text-[10px] text-stone-500 uppercase">Defensa: CA {item.ac || item.acBonus}</p>
+                           </div>
+                           <button onClick={() => handleBuyItem(item)} className="bg-white border border-[#D4AF37] text-stone-700 hover:bg-amber-50 px-3 py-1.5 rounded-md text-xs font-black shadow-sm transition-colors flex flex-col items-center">
+                             <span>Comprar</span>
+                             <span className="text-[9px] text-amber-700">{formatPrice(item.costCP)}</span>
+                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Magia */}
+                  <div>
+                    <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-3 border-b border-[#E5DEC3] pb-1">Bazar Arcano - Objetos Mágicos</h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {ITEM_COMPENDIUM.magic.map(item => (
+                        <div key={item.id} className="flex justify-between items-center p-3 bg-indigo-50/50 border border-indigo-200 rounded-lg hover:border-indigo-300 transition-all">
+                           <div>
+                             <p className="font-serif font-bold text-indigo-900">{item.name}</p>
+                             <p className="text-[10px] text-indigo-600 uppercase">{item.desc}</p>
+                           </div>
+                           <button onClick={() => handleBuyItem(item)} className="bg-indigo-600 border border-indigo-800 text-white hover:bg-indigo-500 px-4 py-1.5 rounded-md text-xs font-black shadow-sm transition-colors flex flex-col items-center">
+                             <span>Comprar</span>
+                             <span className="text-[9px] text-indigo-200">{formatPrice(item.costCP)}</span>
+                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+               </div>
+             </div>
+
+             {/* BOLSA Y MONEDAS */}
+             <div className="lg:col-span-5 space-y-5">
+                <div className="bg-gradient-to-br from-amber-600 to-yellow-600 text-white p-6 rounded-xl shadow-lg border-2 border-yellow-400/50 relative overflow-hidden">
+                  <div className="absolute -right-6 -bottom-6 opacity-20 text-yellow-900"><Coins size={140}/></div>
+                  <h3 className="font-serif font-black text-xl mb-4 tracking-widest uppercase relative z-10 text-yellow-100 flex items-center gap-2"><Coins size={20}/> Monedero</h3>
+                  
+                  <div className="grid grid-cols-5 gap-2 relative z-10 bg-black/20 p-3 rounded-lg border border-white/20">
+                     <div className="text-center"><p className="text-[9px] font-black uppercase text-stone-300 mb-1">Cobre (PC)</p><input type="number" value={data.currency.cp} onChange={e=>updateCurrency('cp', e.target.value)} className="w-full bg-transparent text-center font-serif text-lg font-bold text-white border-b border-white/30 focus:outline-none"/></div>
+                     <div className="text-center"><p className="text-[9px] font-black uppercase text-stone-300 mb-1">Plata (PP)</p><input type="number" value={data.currency.sp} onChange={e=>updateCurrency('sp', e.target.value)} className="w-full bg-transparent text-center font-serif text-lg font-bold text-white border-b border-white/30 focus:outline-none"/></div>
+                     <div className="text-center"><p className="text-[9px] font-black uppercase text-stone-300 mb-1">Elect. (PE)</p><input type="number" value={data.currency.ep} onChange={e=>updateCurrency('ep', e.target.value)} className="w-full bg-transparent text-center font-serif text-lg font-bold text-white border-b border-white/30 focus:outline-none"/></div>
+                     <div className="text-center"><p className="text-[9px] font-black uppercase text-stone-300 mb-1">Oro (PO)</p><input type="number" value={data.currency.gp} onChange={e=>updateCurrency('gp', e.target.value)} className="w-full bg-transparent text-center font-serif text-lg font-bold text-white border-b border-white/30 focus:outline-none"/></div>
+                     <div className="text-center"><p className="text-[9px] font-black uppercase text-stone-300 mb-1">Plat. (PT)</p><input type="number" value={data.currency.pp} onChange={e=>updateCurrency('pp', e.target.value)} className="w-full bg-transparent text-center font-serif text-lg font-bold text-white border-b border-white/30 focus:outline-none"/></div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border border-[#E5DEC3] shadow-sm min-h-[400px]">
+                  <h3 className="font-serif font-bold text-lg uppercase text-stone-800 border-b-2 border-[#D4AF37]/30 mb-4 pb-2 tracking-widest"><Backpack size={18} className="inline mr-2 text-[#8B1515]"/> Mi Inventario</h3>
+                  
+                  {data.inventory.length === 0 ? (
+                    <div className="text-center py-16 text-stone-400">
+                       <Backpack size={48} className="mx-auto mb-4 opacity-50"/>
+                       <p className="font-serif italic text-lg">Tu mochila está vacía.</p>
+                       <p className="text-xs mt-2 uppercase tracking-widest font-bold">Visita el mercado</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
+                      {data.inventory.map((item, idx) => (
+                         <div key={item.instanceId} className="flex justify-between items-center p-3 bg-stone-50 border border-stone-200 rounded-lg shadow-sm">
+                           <div>
+                             <p className="font-serif font-bold text-stone-800">{item.name}</p>
+                             <p className="text-[10px] text-stone-500 uppercase">{item.type} • {item.damage || (item.ac ? `CA ${item.ac}` : 'Magia')}</p>
+                           </div>
+                           <button onClick={() => handleSellItem(idx)} className="text-[10px] font-black uppercase text-red-600 hover:text-white border border-red-200 hover:bg-red-600 px-3 py-1.5 rounded transition-colors">Vender</button>
+                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+             </div>
           </div>
         );
       }
@@ -940,6 +1192,35 @@
               </div>
             </div>
 
+            {/* SECCIÓN 4: Equipo Inicial */}
+            <div className="space-y-4 border-t border-stone-200 pt-8 mt-8">
+              <h3 className="font-bold font-serif text-stone-800 border-b-2 border-[#D4AF37]/30 pb-2 uppercase text-sm tracking-widest text-[#8B1515]">4. Patrimonio Inicial</h3>
+              {!data.hasClaimedStartingGear ? (
+                <div className="bg-stone-800 p-6 rounded-xl border-2 border-[#D4AF37] text-white flex flex-col md:flex-row items-center justify-between shadow-xl">
+                  <div className="mb-4 md:mb-0">
+                    <h4 className="font-serif font-black text-xl text-[#D4AF37] mb-1">Tu Aventura Comienza</h4>
+                    <p className="text-xs text-stone-400 max-w-md">Puedes tomar el paquete de equipamiento estándar preparado para un <strong className="text-white">{primaryClass}</strong>, o bien recibir oro y comprar tu propio equipo en el Mercado.</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button onClick={() => claimStartingGear('class')} className="flex items-center justify-center gap-2 bg-[#F4F1EA] text-[#8B1515] hover:bg-white px-4 py-2.5 rounded-lg text-xs font-black shadow-md transition-colors border border-[#D4AF37]">
+                      <Backpack size={16}/> Paquete Estándar
+                    </button>
+                    <button onClick={() => claimStartingGear('gold')} className="flex items-center justify-center gap-2 bg-gradient-to-br from-amber-600 to-yellow-600 text-white hover:from-amber-500 hover:to-yellow-500 px-4 py-2.5 rounded-lg text-xs font-black shadow-md transition-all border border-yellow-400">
+                      <Coins size={16}/> 150 Oro Inicial
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-green-50 p-4 rounded-xl border border-green-200 flex items-center justify-between">
+                   <div>
+                     <p className="font-bold text-green-800 font-serif">Equipamiento Reclamado</p>
+                     <p className="text-[10px] text-green-700">Revisa la pestaña del Mercado Aventurero para comprar o vender.</p>
+                   </div>
+                   <Shield size={24} className="text-green-500 opacity-50"/>
+                </div>
+              )}
+            </div>
+
           </div>
         );
       }
@@ -1056,12 +1337,15 @@
                </div>
 
                <div className="bg-white p-5 md:p-8 rounded-xl border border-[#E5DEC3] shadow-sm">
-                  <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-5 pb-2 flex items-center gap-2 tracking-widest"><Backpack size={18}/> Equipamiento Activo</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
-                    {renderEquipmentSelector('mainHand', 'Arma Principal', ITEM_COMPENDIUM.weapons)}
-                    {renderEquipmentSelector('offHand', 'Mano Secundaria', [...ITEM_COMPENDIUM.weapons.filter(w=>w.hands===1), ...ITEM_COMPENDIUM.shields])}
-                    {renderEquipmentSelector('chest', 'Armadura Vestida', ITEM_COMPENDIUM.armor)}
-                    {renderEquipmentSelector('ring1', 'Accesorio Mágico', ITEM_COMPENDIUM.magic)}
+                  <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-2 pb-2 flex items-center justify-between tracking-widest">
+                    <span className="flex items-center gap-2"><Backpack size={18}/> Equipamiento Activo</span>
+                    <span className="text-[9px] bg-stone-100 text-stone-500 px-2 py-1 rounded">Basado en tu Inventario</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8 mt-4">
+                    {renderEquipmentSelector('mainHand', 'Arma Principal', ['simple', 'martial'])}
+                    {renderEquipmentSelector('offHand', 'Mano Secundaria', ['simple', 'martial', 'shield'])}
+                    {renderEquipmentSelector('chest', 'Armadura Vestida', ['light', 'medium', 'heavy'])}
+                    {renderEquipmentSelector('ring1', 'Accesorio Mágico', ['ring', 'boots', 'consumable'])}
                   </div>
 
                   <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-4 pb-2 flex items-center gap-2 tracking-widest"><Sword size={18}/> Acciones de Combate</h3>
@@ -1082,6 +1366,9 @@
                             </tr>
                           );
                         })}
+                        {!data.equipment.mainHand && !data.equipment.offHand && (
+                           <tr><td colSpan="3" className="p-4 text-center text-stone-400 text-xs italic">Aún no te has equipado armas desde tu inventario.</td></tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1272,6 +1559,7 @@
             <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 bg-white p-3 rounded-2xl shadow-md border border-[#E5DEC3]">
               {[
                 { id: 'Constructor', icon: <Wrench size={18}/>, label: 'CONSTRUCTOR' },
+                { id: 'Tienda', icon: <ShoppingCart size={18}/>, label: 'TIENDA E INVENTARIO' },
                 { id: 'Magia', icon: <Sparkles size={18}/>, label: 'RASGOS Y MAGIA' },
                 { id: 'Hoja', icon: <FileText size={18}/>, label: 'HOJA DE PERSONAJE' }
               ].map(tab => (
@@ -1283,6 +1571,7 @@
             </div>
 
             {data.activeTab === 'Constructor' && renderConstructorUI()}
+            {data.activeTab === 'Tienda' && renderStoreUI()}
             {data.activeTab === 'Hoja' && renderSheetUI()}
             {data.activeTab === 'Magia' && renderMagicUI()}
           </main>
