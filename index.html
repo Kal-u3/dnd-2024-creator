@@ -17,17 +17,22 @@
   
   <!-- Babel para compilar JSX en el navegador -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Fuente Serif clásica para dar aspecto de libro de reglas -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;800&display=swap');
+    .font-serif-dnd { font-family: 'Crimson Pro', serif; }
+  </style>
 </head>
-<body class="bg-stone-50 text-stone-900 font-sans antialiased">
+<body class="bg-[#F4F1EA] text-stone-900 font-sans antialiased">
   <!-- Aquí es donde React inyectará la aplicación -->
   <div id="root"></div>
 
   <!-- Nuestro código de React -->
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
     // --- SISTEMA DE ICONOS (FontAwesome) ---
-    // Usamos esto para evitar errores de librerías externas complejas en GitHub Pages
     const createIcon = (iconClass) => ({ size = 24, className = "" }) => (
       <i className={`fa-solid ${iconClass} ${className}`} style={{ fontSize: size, width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
     );
@@ -50,6 +55,8 @@
     const X = createIcon('fa-xmark');
     const TrendingUp = createIcon('fa-arrow-trend-up');
     const Eye = createIcon('fa-eye');
+    const SaveIcon = createIcon('fa-floppy-disk');
+    const UploadIcon = createIcon('fa-folder-open');
 
     // ==========================================
     // 1. CONSTANTES Y BASES DE DATOS (ESTÁTICAS)
@@ -101,18 +108,18 @@
     };
 
     const CLASSES_2024 = {
-      'Bárbaro': { hd: 12, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: ['Berserker', 'Árbol del Mundo', 'Tótem', 'Zelote'], features: [{ name: 'Furia', level: 1, desc: 'Ventaja en Fuerza, daño extra y resistencia física.', maxUses: 2, recover: 'Largo' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + CON (sin armadura).', maxUses: '-', recover: '-' }, { name: 'Ataque Extra', level: 5, desc: 'Dos ataques por acción.', maxUses: '-', recover: '-' }] },
-      'Bardo': { hd: 8, saves: ['dex', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Conocimiento', 'Valor', 'Glamour', 'Danza'], features: [{ name: 'Inspiración Bárdica', level: 1, desc: 'Dado extra (1d6) a un aliado.', maxUses: 3, recover: 'Largo' }, { name: 'Aprendiz de Todo', level: 2, desc: '+1/2 Proficiencia a pruebas sin ella.' }] },
-      'Brujo': { hd: 8, saves: ['wis', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Archihada', 'Celestial', 'Infernal', 'Gran Antiguo'], features: [{ name: 'Magia de Pacto', level: 1, desc: 'Espacios se recuperan con descanso corto.', maxUses: '-', recover: '-' }, { name: 'Invocaciones', level: 1, desc: 'Talentos mágicos permanentes.' }] },
-      'Clérigo': { hd: 8, saves: ['wis', 'cha'], primary: 'wis', spellcaster: true, subclasses: ['Vida', 'Luz', 'Guerra', 'Engaño'], features: [{ name: 'Canalizar Divinidad', level: 2, desc: 'Efectos divinos únicos.', maxUses: 1, recover: 'Corto' }] },
-      'Druida': { hd: 8, saves: ['int', 'wis'], primary: 'wis', spellcaster: true, subclasses: ['Luna', 'Tierra', 'Estrellas', 'Mar'], features: [{ name: 'Forma Salvaje', level: 2, desc: 'Te transformas en bestia.', maxUses: 2, recover: 'Corto' }] },
-      'Explorador': { hd: 10, saves: ['str', 'dex'], primary: 'wis', spellcaster: true, subclasses: ['Cazador', 'Señor Bestias', 'Gloom Stalker', 'Caminante Feérico'], features: [{ name: 'Marca del Cazador', level: 1, desc: 'Daño extra gratis.', maxUses: 2, recover: 'Largo' }] },
-      'Guerrero': { hd: 10, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: ['Campeón', 'Maestro Batalla', 'Caballero Arcano'], features: [{ name: 'Nuevos Bríos', level: 1, desc: 'Curas 1d10+nivel.', maxUses: 1, recover: 'Corto' }, { name: 'Oleada de Acción', level: 2, desc: 'Acción extra.', maxUses: 1, recover: 'Corto' }] },
-      'Hechicero': { hd: 6, saves: ['con', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Dracónico', 'Salvaje', 'Aberrante'], features: [{ name: 'Magia Innata', level: 1, desc: 'Ventaja en ataques de conjuro.', maxUses: 2, recover: 'Largo' }, { name: 'Metamagia', level: 3, desc: 'Altera tus hechizos.' }] },
-      'Mago': { hd: 6, saves: ['int', 'wis'], primary: 'int', spellcaster: true, subclasses: ['Abjuración', 'Evocación', 'Ilusión', 'Adivinación'], features: [{ name: 'Recuperación Arcana', level: 1, desc: 'Recuperas magia en descanso corto.', maxUses: 1, recover: 'Largo' }, { name: 'Erudito', level: 2, desc: 'Experto en una habilidad intelectual.' }] },
-      'Monje': { hd: 8, saves: ['str', 'dex'], primary: 'dex', spellcaster: false, subclasses: ['Mano Abierta', 'Sombras', 'Elementos'], features: [{ name: 'Artes Marciales', level: 1, desc: 'Ataques desarmados 1d6.', maxUses: '-', recover: '-' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + SAB.', maxUses: '-', recover: '-' }] },
-      'Paladín': { hd: 10, saves: ['wis', 'cha'], primary: 'str', spellcaster: true, subclasses: ['Devoción', 'Venganza', 'Ancianos', 'Gloria'], features: [{ name: 'Imposición Manos', level: 1, desc: 'Curas tocando.', maxUses: 'Infinita', recover: 'Largo' }, { name: 'Castigo Divino', level: 2, desc: 'Daño radiante extra.', maxUses: '-', recover: '-' }] },
-      'Pícaro': { hd: 8, saves: ['dex', 'int'], primary: 'dex', spellcaster: false, subclasses: ['Asesino', 'Ladrón', 'Embaucador'], features: [{ name: 'Ataque Furtivo', level: 1, desc: 'Daño extra con ventaja.', maxUses: '-', recover: '-' }, { name: 'Acción Astuta', level: 2, desc: 'Correr/Retirarse como adicional.', maxUses: '-', recover: '-' }] }
+      'Bárbaro': { hd: 12, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: [{name:'Senda del Berserker', desc:'Frenesí de pura violencia y daño extra al atacar.'}, {name:'Árbol del Mundo', desc:'Magia vital que otorga HP temporal y control de teletransporte.'}, {name:'Guerrero Totémico', desc:'Poderes canalizados de espíritus animales (Oso, Águila, Lobo).'}, {name:'Senda del Zelote', desc:'Poder divino, daño necrótico/radiante y resistencia a la muerte.'}], features: [{ name: 'Furia', level: 1, desc: 'Ventaja en Fuerza, daño extra y resistencia física.', maxUses: 2, recover: 'Largo' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + CON (sin armadura).', maxUses: '-', recover: '-' }, { name: 'Ataque Extra', level: 5, desc: 'Dos ataques por acción.', maxUses: '-', recover: '-' }] },
+      'Bardo': { hd: 8, saves: ['dex', 'cha'], primary: 'cha', spellcaster: true, subclasses: [{name:'Conocimiento', desc:'Aprende hechizos de cualquier clase y domina más habilidades.'}, {name:'Valor', desc:'Inspiración aplicada al combate, armaduras medias y ataque extra.'}, {name:'Glamour', desc:'Magia feérica para encantar y reposicionar aliados dramáticamente.'}, {name:'Danza', desc:'Combate sin armas fluido y evasión perfecta.'}], features: [{ name: 'Inspiración Bárdica', level: 1, desc: 'Dado extra (1d6) a un aliado.', maxUses: 3, recover: 'Largo' }, { name: 'Aprendiz de Todo', level: 2, desc: '+1/2 Proficiencia a pruebas sin ella.' }] },
+      'Brujo': { hd: 8, saves: ['wis', 'cha'], primary: 'cha', spellcaster: true, subclasses: [{name:'Archihada', desc:'Engaño, ilusiones y teletransportes parpadeantes.'}, {name:'Celestial', desc:'Poder sagrado, curación y luz purificadora.'}, {name:'Infernal', desc:'Daño masivo de fuego y absorción de almas derrotadas.'}, {name:'Gran Antiguo', desc:'Magia psíquica, telepatía y manipulación mental.'}], features: [{ name: 'Magia de Pacto', level: 1, desc: 'Espacios se recuperan con descanso corto.', maxUses: '-', recover: '-' }, { name: 'Invocaciones', level: 1, desc: 'Talentos mágicos permanentes.' }] },
+      'Clérigo': { hd: 8, saves: ['wis', 'cha'], primary: 'wis', spellcaster: true, subclasses: [{name:'Dominio de la Vida', desc:'Especialista supremo en curación masiva.'}, {name:'Dominio de la Luz', desc:'Hechizos de fuego y resplandor para cegar enemigos.'}, {name:'Dominio de la Guerra', desc:'Ataques extra, armadura pesada y precisión infalible.'}, {name:'Dominio del Engaño', desc:'Ilusiones divinas, sigilo y duplicados mágicos.'}], features: [{ name: 'Canalizar Divinidad', level: 2, desc: 'Efectos divinos únicos.', maxUses: 1, recover: 'Corto' }] },
+      'Druida': { hd: 8, saves: ['int', 'wis'], primary: 'wis', spellcaster: true, subclasses: [{name:'Círculo de la Luna', desc:'Transformaciones en bestias mucho más poderosas para combate melee.'}, {name:'Círculo de la Tierra', desc:'Dominio de los biomas, recuperación de magia y control del terreno.'}, {name:'Círculo de las Estrellas', desc:'Formas astrales que disparan luz, curan o predicen el futuro.'}, {name:'Círculo del Mar', desc:'Canaliza la ira del océano, ahogando y empujando a los enemigos.'}], features: [{ name: 'Forma Salvaje', level: 2, desc: 'Te transformas en bestia.', maxUses: 2, recover: 'Corto' }] },
+      'Explorador': { hd: 10, saves: ['str', 'dex'], primary: 'wis', spellcaster: true, subclasses: [{name:'Cazador', desc:'Tácticas letales contra grupos de enemigos o monstruos gigantes.'}, {name:'Señor Bestias', desc:'Un compañero animal mágico que pelea a tu lado.'}, {name:'Acechador Oscuro', desc:'Ataques iniciales devastadores y letal en la oscuridad total.'}, {name:'Caminante Feérico', desc:'Magia de hadas, teletransporte y daño psíquico.'}], features: [{ name: 'Marca del Cazador', level: 1, desc: 'Daño extra gratis.', maxUses: 2, recover: 'Largo' }] },
+      'Guerrero': { hd: 10, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: [{name:'Campeón', desc:'Críticos más frecuentes y proezas atléticas excepcionales.'}, {name:'Maestro Batalla', desc:'Maniobras tácticas (desarmar, empujar, contraatacar).'}, {name:'Caballero Arcano', desc:'Combina ataques físicos con conjuros de protección y destrucción.'}], features: [{ name: 'Nuevos Bríos', level: 1, desc: 'Curas 1d10+nivel.', maxUses: 1, recover: 'Corto' }, { name: 'Oleada de Acción', level: 2, desc: 'Acción extra.', maxUses: 1, recover: 'Corto' }] },
+      'Hechicero': { hd: 6, saves: ['con', 'cha'], primary: 'cha', spellcaster: true, subclasses: [{name:'Linaje Dracónico', desc:'Escamas protectoras, vuelo y afinidad a un elemento dracónico.'}, {name:'Magia Salvaje', desc:'Caos mágico impredecible que altera el campo de batalla.'}, {name:'Aberrante', desc:'Poderes psíquicos inquietantes y telepatía alienígena.'}], features: [{ name: 'Magia Innata', level: 1, desc: 'Ventaja en ataques de conjuro.', maxUses: 2, recover: 'Largo' }, { name: 'Metamagia', level: 3, desc: 'Altera tus hechizos.' }] },
+      'Mago': { hd: 6, saves: ['int', 'wis'], primary: 'int', spellcaster: true, subclasses: [{name:'Abjuración', desc:'Escudos arcanos que absorben daño para ti y tu grupo.'}, {name:'Evocación', desc:'Daño elemental masivo que no lastima a tus aliados.'}, {name:'Ilusión', desc:'Engaños visuales poderosos que pueden volverse reales.'}, {name:'Adivinación', desc:'Alteración del destino guardando tiradas de dados pre-lanzadas.'}], features: [{ name: 'Recuperación Arcana', level: 1, desc: 'Recuperas magia en descanso corto.', maxUses: 1, recover: 'Largo' }, { name: 'Erudito', level: 2, desc: 'Experto en una habilidad intelectual.' }] },
+      'Monje': { hd: 8, saves: ['str', 'dex'], primary: 'dex', spellcaster: false, subclasses: [{name:'Mano Abierta', desc:'Derribos, empujes y curación mediante el control del Ki.'}, {name:'Sombras', desc:'Teletransporte entre las sombras y artes de infiltración ninja.'}, {name:'Elementos', desc:'Ataques elementales a distancia e impulsos de área con Ki.'}], features: [{ name: 'Artes Marciales', level: 1, desc: 'Ataques desarmados 1d6.', maxUses: '-', recover: '-' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + SAB.', maxUses: '-', recover: '-' }] },
+      'Paladín': { hd: 10, saves: ['wis', 'cha'], primary: 'str', spellcaster: true, subclasses: [{name:'Juramento de Devoción', desc:'Protección absoluta y luz sagrada contra la oscuridad.'}, {name:'Juramento de Venganza', desc:'Persecución implacable e incremento de daño a un objetivo.'}, {name:'Juramento de los Ancianos', desc:'Magia natural y resistencia grupal contra conjuros.'}, {name:'Juramento de Gloria', desc:'Atletismo heroico, velocidad y salud temporal grupal.'}], features: [{ name: 'Imposición Manos', level: 1, desc: 'Curas tocando.', maxUses: 'Infinita', recover: 'Largo' }, { name: 'Castigo Divino', level: 2, desc: 'Daño radiante extra.', maxUses: '-', recover: '-' }] },
+      'Pícaro': { hd: 8, saves: ['dex', 'int'], primary: 'dex', spellcaster: false, subclasses: [{name:'Asesino', desc:'Emboscadas letales con daño crítico garantizado por sorpresa.'}, {name:'Ladrón', desc:'Uso de objetos como acción adicional y movilidad extrema para trepar.'}, {name:'Embaucador Mágico', desc:'Magia ilusionista, encantamientos y Mano de Mago invisible.'}], features: [{ name: 'Ataque Furtivo', level: 1, desc: 'Daño extra con ventaja.', maxUses: '-', recover: '-' }, { name: 'Acción Astuta', level: 2, desc: 'Correr/Retirarse como adicional.', maxUses: '-', recover: '-' }] }
     };
 
     const BACKGROUNDS_2024 = {
@@ -146,6 +153,27 @@
       'Orco': { speed: 30, traits: [{name: 'Adrenalina', desc: 'Dash adicional.'}] },
       'Aasimar': { speed: 30, traits: [{name: 'Celestial', desc: 'Curas.'}] }
     };
+
+    const FEATS_2024 = [
+      { name: 'Actor', desc: 'Aumenta CAR en 1. Ventaja en pruebas de Engaño e Interpretación para fingir ser otra persona.' },
+      { name: 'Afortunado', desc: 'Ganas Puntos de Suerte para darte ventaja o imponer desventaja.' },
+      { name: 'Alerta', desc: '+Bono de Competencia a Iniciativa. Puedes intercambiar iniciativa con un aliado.' },
+      { name: 'Atacante Salvaje', desc: 'Tira el daño de arma cuerpo a cuerpo dos veces y usa el mayor.' },
+      { name: 'Atleta', desc: 'Aumenta FUE o DES en 1. Levantar te cuesta 5 pies, trepar no cuesta extra.' },
+      { name: 'Combatiente con Dos Armas', desc: 'Aumenta FUE o DES en 1. Ataques adicionales más fáciles al usar armas ligeras.' },
+      { name: 'Curandero', desc: 'Tus kits de sanador curan más y puedes usar dados de golpe para curar a otros.' },
+      { name: 'Duro', desc: 'Tu máximo de HP aumenta en +2 por cada nivel de personaje.' },
+      { name: 'Experto en Habilidades', desc: 'Aumenta un atributo en 1. Ganas competencia en una habilidad y pericia en otra.' },
+      { name: 'Francotirador', desc: 'Aumenta DES en 1. Ignoras cobertura media. Disparar en combate cerrado no da desventaja.' },
+      { name: 'Habilidoso', desc: 'Ganas competencia en 3 habilidades de tu elección.' },
+      { name: 'Iniciado Mágico', desc: 'Aprendes 2 trucos y 1 conjuro de nivel 1 de una clase de magia.' },
+      { name: 'Luchador de Taberna', desc: 'Aumenta FUE o CON en 1. Daño desarmado 1d4 y puedes empujar al golpear.' },
+      { name: 'Maestro de Armas Pesadas', desc: 'Aumenta FUE en 1. Al matar o crítico, ataque extra. Si fallas, haces daño parcial.' },
+      { name: 'Maestro de Escudos', desc: 'Aumenta FUE en 1. Si atacas cuerpo a cuerpo, puedes empujar con el escudo para derribar.' },
+      { name: 'Músico', desc: 'Otorga Inspiración Heroica a aliados tras un descanso corto o largo.' },
+      { name: 'Observador', desc: 'Aumenta INT o SAB en 1. Tu Percepción pasiva e Investigación aumentan en 5.' },
+      { name: 'Resiliente', desc: 'Aumenta un atributo en 1 y ganas competencia en tiradas de salvación de ese atributo.' }
+    ];
 
     const ITEM_COMPENDIUM = {
       weapons: [
@@ -196,7 +224,7 @@
       return mod >= 0 ? `+${mod}` : `${mod}`;
     }
 
-    const INITIAL_STATE = {
+    const getInitialState = () => ({
       activeTab: 'Constructor',
       header: { name: 'Héroe', race: 'Humano', background: 'Soldado' },
       classes: [{ id: '1', name: 'Guerrero', level: 1, hpRolls: [10], subclass: '' }],
@@ -204,15 +232,15 @@
       asi: { plus2: 'str', plus1: 'con' },
       combat: { hpCurrent: 0, hpTemp: 0 },
       equipment: { head: null, chest: ITEM_COMPENDIUM.armor[1], mainHand: ITEM_COMPENDIUM.weapons[12], offHand: ITEM_COMPENDIUM.shields[0], ring1: null },
-      spells: [], usedResources: {}, manualSaves: [], manualSkills: [], customResistances: ''
-    };
+      spells: [], usedResources: {}, manualSaves: [], manualSkills: [], customResistances: '', feats: []
+    });
 
     // ==========================================
     // 2. COMPONENTE PRINCIPAL APP
     // ==========================================
 
     function App() {
-      const [data, setData] = useState(INITIAL_STATE);
+      const [data, setData] = useState(getInitialState());
       const [apiSpells, setApiSpells] = useState([]);
       const [isLoadingSpells, setIsLoadingSpells] = useState(false);
       const [dndDatabase, setDndDatabase] = useState(null);
@@ -222,6 +250,57 @@
       const [lvlUpHpMethod, setLvlUpHpMethod] = useState('average');
       const [lvlUpHpRoll, setLvlUpHpRoll] = useState(null);
       const [lvlUpSubclass, setLvlUpSubclass] = useState('');
+      
+      const [lvlUpChoiceType, setLvlUpChoiceType] = useState('asi');
+      const [lvlUpSelectedFeat, setLvlUpSelectedFeat] = useState('');
+      const [lvlUpAsi, setLvlUpAsi] = useState({ plus2: 'str', plus1: 'con' });
+
+      // --- SISTEMA DE GUARDADO (LOCALSTORAGE Y JSON) ---
+      useEffect(() => {
+        const savedChar = localStorage.getItem('dnd_2024_character');
+        if (savedChar) {
+          try {
+            setData(JSON.parse(savedChar));
+          } catch (e) {
+            console.error("Error cargando guardado local");
+          }
+        }
+      }, []);
+
+      useEffect(() => {
+        localStorage.setItem('dnd_2024_character', JSON.stringify(data));
+      }, [data]);
+
+      const handleExport = () => {
+        const dataStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${data.header.name || 'Heroe'}_DND2024.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const handleImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedData = JSON.parse(event.target.result);
+            if (importedData && importedData.header && importedData.classes) {
+              setData(importedData);
+            } else {
+              alert("El archivo no parece ser un personaje válido.");
+            }
+          } catch (err) {
+            alert("Error al leer el archivo JSON.");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; 
+      };
 
       // --- CÁLCULOS CENTRALIZADOS ---
       const primaryClass = data.classes[0].name;
@@ -311,7 +390,11 @@
         const clsInfo = CLASSES_2024[c.name];
         if (clsInfo && clsInfo.features) {
           clsInfo.features.forEach(feat => { if (c.level >= feat.level) activeFeatures.push({ ...feat, originClass: c.name }); });
-          if (c.level >= 3 && c.subclass) activeFeatures.push({ name: c.subclass, level: 3, originClass: c.name, desc: "Especialización de subclase activa.", maxUses: '-', recover: '-' });
+          
+          if (c.level >= 3 && c.subclass) {
+            const subDesc = clsInfo.subclasses?.find(s => s.name === c.subclass)?.desc || "Especialización de subclase activa.";
+            activeFeatures.push({ name: `Subclase: ${c.subclass}`, level: 3, originClass: c.name, desc: subDesc, maxUses: '-', recover: '-' });
+          }
         }
       });
 
@@ -326,7 +409,8 @@
       
       const handlePrimaryClassChange = (v) => {
         setData(prev => {
-          const nc = [...prev.classes]; nc[0].name = v; 
+          const nc = prev.classes.map(c => ({ ...c, hpRolls: [...c.hpRolls] })); 
+          nc[0].name = v; 
           nc[0].hpRolls = [CLASSES_2024[v].hd]; 
           nc[0].subclass = '';
           const startEquip = v === 'Mago' ? ITEM_COMPENDIUM.weapons.find(w=>w.id==='w_bas') : ITEM_COMPENDIUM.weapons[0];
@@ -395,6 +479,8 @@
         setLvlUpHpMethod('average');
         setLvlUpHpRoll(null);
         setLvlUpSubclass('');
+        setLvlUpChoiceType('asi');
+        setLvlUpSelectedFeat('');
         setShowLevelUpModal(true);
       };
 
@@ -406,16 +492,38 @@
 
       const confirmLevelUp = () => {
         setData(prev => {
-          const nc = [...prev.classes]; const idx = nc.findIndex(c => c.name === lvlUpSelectedClass);
+          const nc = prev.classes.map(c => ({ ...c, hpRolls: [...c.hpRolls] })); 
+          const idx = nc.findIndex(c => c.name === lvlUpSelectedClass);
+          
+          const existingLevel = idx >= 0 ? nc[idx].level : 0;
+          const nextLvl = existingLevel + 1;
           const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
           const gain = lvlUpHpMethod === 'average' ? (Math.ceil(hd/2)+1) : (lvlUpHpRoll || 1);
+          
           if (idx >= 0) {
-            nc[idx].level += 1; nc[idx].hpRolls.push(gain);
-            if (nc[idx].level === 3) nc[idx].subclass = lvlUpSubclass;
+            nc[idx].level = nextLvl; 
+            nc[idx].hpRolls.push(gain);
+            if (nextLvl === 3) nc[idx].subclass = lvlUpSubclass;
           } else {
             nc.push({ id: Date.now().toString(), name: lvlUpSelectedClass, level: 1, hpRolls: [gain], subclass: '' });
           }
-          return { ...prev, classes: nc };
+
+          let newStats = { ...prev.baseStats };
+          let newFeats = prev.feats ? [...prev.feats] : [];
+          
+          const isFeatLevel = [4, 8, 12, 16, 19].includes(nextLvl) || (lvlUpSelectedClass === 'Guerrero' && [6, 14].includes(nextLvl)) || (lvlUpSelectedClass === 'Pícaro' && nextLvl === 10);
+          
+          if (isFeatLevel) {
+            if (lvlUpChoiceType === 'asi') {
+               newStats[lvlUpAsi.plus2] += 2;
+               newStats[lvlUpAsi.plus1] += 1;
+               newFeats.push({ name: `Mejora de Atributos (+2 ${lvlUpAsi.plus2.toUpperCase()}, +1 ${lvlUpAsi.plus1.toUpperCase()})`, desc: 'Mejoraste tus atributos base de forma permanente.', origin: `${lvlUpSelectedClass} ${nextLvl}` });
+            } else if (lvlUpChoiceType === 'feat' && lvlUpSelectedFeat) {
+               newFeats.push({ name: lvlUpSelectedFeat, desc: FEATS_2024.find(f => f.name === lvlUpSelectedFeat)?.desc || '', origin: `${lvlUpSelectedClass} ${nextLvl}` });
+            }
+          }
+
+          return { ...prev, classes: nc, baseStats: newStats, feats: newFeats };
         });
         setShowLevelUpModal(false);
       };
@@ -460,17 +568,17 @@
       function renderActionCardUI(keyId, title, subtitle, fullDesc, currentUses, maxUses, onUse, onRecover, isSpell = false) {
         const ex = maxUses !== 'Infinita' && maxUses !== '-' && currentUses >= maxUses;
         return (
-          <div key={keyId} className={`border-2 rounded-xl p-3 md:p-4 transition-all flex flex-col justify-between ${ex ? 'bg-stone-100 border-stone-300 grayscale opacity-60' : 'bg-white border-red-200 shadow-sm'}`}>
+          <div key={keyId} className={`border border-[#E5DEC3] rounded-xl p-3 md:p-4 transition-all flex flex-col justify-between ${ex ? 'bg-[#F4F1EA] grayscale opacity-60' : 'bg-white shadow-sm'}`}>
             <div>
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h4 className="font-bold text-sm text-stone-800">{title}</h4>
-                  <span className={`text-[9px] font-bold uppercase ${isSpell ? 'text-blue-600' : 'text-amber-600'}`}>{subtitle}</span>
+                  <h4 className="font-serif font-bold text-sm text-stone-800">{title}</h4>
+                  <span className={`text-[9px] font-bold uppercase ${isSpell ? 'text-indigo-600' : 'text-amber-600'}`}>{subtitle}</span>
                 </div>
                 {maxUses !== 'Infinita' && maxUses !== '-' && (
                   <div className="flex gap-1">
                     {Array.from({ length: Number(maxUses) || 0 }).map((_, i) => (
-                      <div key={i} className={`w-2 h-2 rounded-full border ${i < currentUses ? 'bg-stone-300' : (isSpell ? 'bg-blue-500' : 'bg-red-500')}`} />
+                      <div key={i} className={`w-2 h-2 rounded-full border ${i < currentUses ? 'bg-stone-300 border-stone-400' : (isSpell ? 'bg-indigo-500 border-indigo-700' : 'bg-[#8B1515] border-[#701010]')}`} />
                     ))}
                   </div>
                 )}
@@ -478,9 +586,9 @@
               <p className="text-[10px] text-stone-600 h-16 overflow-y-auto pr-1 text-justify scrollbar-thin">{fullDesc}</p>
             </div>
             {maxUses !== '-' && (
-              <div className="flex justify-between items-center border-t pt-2 mt-2">
+              <div className="flex justify-between items-center border-t border-[#E5DEC3] pt-2 mt-2">
                 <button disabled={ex} onClick={onUse} className="text-[9px] font-bold uppercase text-[#8B1515] hover:underline">Usar</button>
-                <button onClick={onRecover} className="text-[9px] font-bold uppercase text-stone-400 hover:text-stone-600">Rest.</button>
+                <button onClick={onRecover} className="text-[9px] font-bold uppercase text-stone-400 hover:text-stone-600">Restaurar</button>
               </div>
             )}
           </div>
@@ -492,7 +600,7 @@
           <div className="mb-3">
             <label className="block text-[10px] font-bold uppercase text-stone-500 mb-1">{title}</label>
             <select 
-              className="w-full border border-stone-300 rounded p-1.5 text-xs focus:outline-none focus:border-[#8B1515]"
+              className="w-full border border-[#E5DEC3] bg-white rounded p-1.5 text-xs focus:outline-none focus:border-[#D4AF37]"
               value={data.equipment[slot] ? data.equipment[slot].id : ''}
               onChange={(e) => equipItem(slot, itemsToPick.find(i => i.id === e.target.value) || null)}
             >
@@ -514,54 +622,108 @@
         const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
         const feats = CLASSES_2024[lvlUpSelectedClass]?.features?.filter(f => f.level === nextLvl) || [];
 
+        const isFeatLevel = [4, 8, 12, 16, 19].includes(nextLvl) || (lvlUpSelectedClass === 'Guerrero' && [6, 14].includes(nextLvl)) || (lvlUpSelectedClass === 'Pícaro' && nextLvl === 10);
+        const canConfirm = nextLvl === 3 ? !!lvlUpSubclass : (isFeatLevel && lvlUpChoiceType === 'feat' ? !!lvlUpSelectedFeat : true);
+
         return (
-          <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col">
-              <div className="bg-[#8B1515] p-4 text-white flex justify-between items-center">
-                <h2 className="font-bold flex items-center gap-2"><TrendingUp size={20}/> Subir Nivel</h2>
-                <button onClick={() => setShowLevelUpModal(false)}><X size={20}/></button>
+          <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-[#F4F1EA] rounded-xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col border-2 border-[#D4AF37]">
+              <div className="bg-gradient-to-r from-[#701010] to-[#8B1515] p-4 text-white flex justify-between items-center border-b border-[#D4AF37]">
+                <h2 className="font-serif font-bold text-xl flex items-center gap-2"><TrendingUp size={20}/> Subir de Nivel</h2>
+                <button onClick={() => setShowLevelUpModal(false)} className="hover:text-[#D4AF37] transition-colors"><X size={20}/></button>
               </div>
               <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
                 <div>
-                  <p className="text-xs font-bold text-stone-500 mb-2 uppercase">SELECCIONA CLASE A MEJORAR:</p>
-                  <select value={lvlUpSelectedClass} onChange={(e) => setLvlUpSelectedClass(e.target.value)} className="w-full border p-2 rounded">
-                    <optgroup label="Tus Clases">
+                  <p className="text-xs font-bold text-stone-500 mb-2 uppercase tracking-widest">Selecciona Clase a Mejorar:</p>
+                  <select value={lvlUpSelectedClass} onChange={(e) => setLvlUpSelectedClass(e.target.value)} className="w-full border border-[#E5DEC3] p-2 rounded bg-white shadow-sm focus:outline-none focus:border-[#D4AF37] font-serif">
+                    <optgroup label="Tus Clases Activas">
                       {data.classes.map(c => <option key={`up-${c.name}`} value={c.name}>{c.name} (Subir a Nivel {c.level + 1})</option>)}
                     </optgroup>
-                    <optgroup label="Multiclase (Nivel 1)">
+                    <optgroup label="Añadir Multiclase (Nivel 1)">
                       {Object.keys(CLASSES_2024).filter(cls => !data.classes.find(c => c.name === cls)).map(cls => <option key={`new-${cls}`} value={cls}>{cls}</option>)}
                     </optgroup>
                   </select>
                 </div>
                 
                 {nextLvl === 3 && (
-                  <div className="bg-amber-50 p-3 rounded border border-amber-200 shadow-inner">
-                    <p className="text-xs font-bold text-amber-800 mb-2 uppercase flex items-center gap-2"><Sparkles size={14}/> ¡Nivel 3! Elige tu Subclase:</p>
-                    <select value={lvlUpSubclass} onChange={e => setLvlUpSubclass(e.target.value)} className="w-full border p-2 rounded text-sm font-bold text-amber-900">
+                  <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 shadow-inner">
+                    <p className="text-xs font-bold text-amber-800 mb-3 uppercase flex items-center gap-2 tracking-widest"><Sparkles size={14}/> ¡Nivel 3! Elige tu Subclase</p>
+                    <select value={lvlUpSubclass} onChange={e => setLvlUpSubclass(e.target.value)} className="w-full border border-amber-300 p-2 rounded text-sm font-bold text-amber-900 mb-3 bg-white focus:outline-none focus:border-amber-500 font-serif">
                       <option value="">-- Seleccionar Subclase --</option>
-                      {CLASSES_2024[lvlUpSelectedClass]?.subclasses.map(s => <option key={`sub-${s}`} value={s}>{s}</option>)}
+                      {CLASSES_2024[lvlUpSelectedClass]?.subclasses.map(s => <option key={`sub-${s.name}`} value={s.name}>{s.name}</option>)}
                     </select>
+                    {lvlUpSubclass && (
+                      <p className="text-[11px] text-amber-900 bg-white/60 p-3 rounded border border-amber-100 italic leading-relaxed">
+                        {CLASSES_2024[lvlUpSelectedClass]?.subclasses.find(s => s.name === lvlUpSubclass)?.desc}
+                      </p>
+                    )}
                   </div>
                 )}
 
-                <div className="bg-stone-50 p-4 rounded border">
-                  <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Aumento de Salud (1d{hd}):</p>
+                <div className="bg-white p-4 rounded-xl border border-[#E5DEC3] shadow-sm">
+                  <p className="text-xs font-bold text-stone-500 mb-3 uppercase tracking-widest">Aumento de Puntos de Golpe (1d{hd}):</p>
                   <div className="flex gap-4">
-                    <button onClick={() => setLvlUpHpMethod('average')} className={`flex-1 p-2 border-2 rounded font-bold text-sm transition-colors ${lvlUpHpMethod==='average'?'border-green-500 bg-green-50 text-green-900':'border-stone-200 text-stone-500'}`}>Promedio (+{Math.ceil(hd/2)+1})</button>
-                    <button onClick={handleRollHp} className={`flex-1 p-2 border-2 rounded font-bold text-sm transition-colors ${lvlUpHpMethod==='roll'?'border-amber-500 bg-amber-50 text-amber-900':'border-stone-200 text-stone-500'}`}>{lvlUpHpRoll ? `Resultado: ${lvlUpHpRoll}` : 'Tirar el Dado'}</button>
+                    <button onClick={() => setLvlUpHpMethod('average')} className={`flex-1 p-2 border-2 rounded-lg font-bold text-sm transition-colors shadow-sm ${lvlUpHpMethod==='average'?'border-emerald-500 bg-emerald-50 text-emerald-900':'border-stone-200 text-stone-500 hover:border-stone-300'}`}>Promedio (+{Math.ceil(hd/2)+1})</button>
+                    <button onClick={handleRollHp} className={`flex-1 p-2 border-2 rounded-lg font-bold text-sm transition-colors shadow-sm ${lvlUpHpMethod==='roll'?'border-amber-500 bg-amber-50 text-amber-900':'border-stone-200 text-stone-500 hover:border-stone-300'}`}>{lvlUpHpRoll ? `Resultado: ${lvlUpHpRoll}` : 'Tirar el Dado'}</button>
                   </div>
                 </div>
 
+                {isFeatLevel && (
+                  <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 shadow-inner">
+                    <p className="text-xs font-bold text-indigo-900 mb-3 uppercase flex items-center gap-2 tracking-widest"><Sparkles size={14}/> Mejora Especial (Atributos o Dote)</p>
+                    <div className="flex gap-2 mb-4">
+                      <button onClick={() => setLvlUpChoiceType('asi')} className={`flex-1 p-2 border-2 rounded-lg text-xs font-bold transition-colors shadow-sm ${lvlUpChoiceType==='asi'?'border-indigo-500 bg-indigo-100 text-indigo-900':'border-indigo-100 text-indigo-500 bg-white hover:border-indigo-200'}`}>+2 y +1 a Atributos</button>
+                      <button onClick={() => setLvlUpChoiceType('feat')} className={`flex-1 p-2 border-2 rounded-lg text-xs font-bold transition-colors shadow-sm ${lvlUpChoiceType==='feat'?'border-indigo-500 bg-indigo-100 text-indigo-900':'border-indigo-100 text-indigo-500 bg-white hover:border-indigo-200'}`}>Elegir una Dote (Feat)</button>
+                    </div>
+
+                    {lvlUpChoiceType === 'asi' ? (
+                       <div className="flex gap-3">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-indigo-800 uppercase mb-1">+2 Principal</label>
+                            <select value={lvlUpAsi.plus2} onChange={e => setLvlUpAsi(prev => ({...prev, plus2: e.target.value}))} className="w-full border border-indigo-300 p-2 rounded bg-white text-xs font-bold text-indigo-900 focus:outline-none">
+                              {ATTRS.map(a => <option key={a.key} value={a.key}>{a.name}</option>)}
+                            </select>
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-indigo-800 uppercase mb-1">+1 Secundario</label>
+                            <select value={lvlUpAsi.plus1} onChange={e => setLvlUpAsi(prev => ({...prev, plus1: e.target.value}))} className="w-full border border-indigo-300 p-2 rounded bg-white text-xs font-bold text-indigo-900 focus:outline-none">
+                              {ATTRS.map(a => <option key={a.key} value={a.key} disabled={a.key === lvlUpAsi.plus2}>{a.name}</option>)}
+                            </select>
+                          </div>
+                       </div>
+                    ) : (
+                       <div>
+                          <select value={lvlUpSelectedFeat} onChange={e => setLvlUpSelectedFeat(e.target.value)} className="w-full border border-indigo-300 bg-white p-2 rounded text-sm font-bold text-indigo-900 focus:outline-none font-serif">
+                             <option value="">-- Seleccionar Dote --</option>
+                             {FEATS_2024.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+                          </select>
+                          {lvlUpSelectedFeat && (
+                            <p className="text-[11px] text-indigo-900 bg-white/60 p-3 mt-3 rounded border border-indigo-100 italic leading-relaxed">
+                              {FEATS_2024.find(f => f.name === lvlUpSelectedFeat)?.desc}
+                            </p>
+                          )}
+                       </div>
+                    )}
+                  </div>
+                )}
+
                 {feats.length > 0 && (
                   <div>
-                    <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Rasgos Desbloqueados:</p>
-                    {feats.map(f => <div key={`feat-${f.name}`} className="text-sm border-l-4 border-[#8B1515] bg-stone-50 pl-3 py-2 mb-2 rounded-r"><strong>{f.name}:</strong> {f.desc}</div>)}
+                    <p className="text-xs font-bold text-stone-500 mb-3 uppercase tracking-widest">Rasgos Desbloqueados:</p>
+                    <div className="space-y-2">
+                      {feats.map(f => (
+                        <div key={`feat-${f.name}`} className="bg-white border border-[#E5DEC3] rounded-lg p-3 shadow-sm flex flex-col gap-1">
+                           <span className="font-serif font-bold text-[#8B1515] text-sm">{f.name}</span>
+                           <span className="text-xs text-stone-600 leading-snug">{f.desc}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="p-4 border-t flex justify-end gap-2">
-                <button onClick={() => setShowLevelUpModal(false)} className="px-4 py-2 font-bold text-stone-500">Cerrar</button>
-                <button onClick={confirmLevelUp} disabled={nextLvl === 3 && !lvlUpSubclass} className="px-6 py-2 bg-green-600 text-white rounded font-bold shadow disabled:opacity-50">Confirmar</button>
+              <div className="p-4 border-t border-[#D4AF37] bg-stone-100 flex justify-end gap-3">
+                <button onClick={() => setShowLevelUpModal(false)} className="px-4 py-2 font-bold text-stone-600 hover:text-stone-900 transition-colors">Cancelar</button>
+                <button onClick={confirmLevelUp} disabled={!canConfirm} className="px-6 py-2 bg-gradient-to-r from-[#701010] to-[#8B1515] text-white rounded-lg font-bold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed border border-[#D4AF37]/50 transition-all">Confirmar Nivel</button>
               </div>
             </div>
           </div>
@@ -587,101 +749,44 @@
         };
 
         return (
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8 space-y-8 animate-in fade-in">
+          <div className="bg-[#F4F1EA] rounded-xl shadow-md border border-[#E5DEC3] p-6 md:p-8 space-y-8 animate-in fade-in">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-              <h2 className="text-2xl font-black text-stone-800 tracking-tight uppercase">Constructor de Personaje</h2>
-              <button onClick={openLevelUpWizard} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-                <TrendingUp size={16}/> Nivel Total: {totalLevel} (Subir Nivel)
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                 <h3 className="font-bold text-stone-800 border-b pb-1 uppercase text-xs tracking-wider">Identidad y Origen</h3>
-                 <div className="grid grid-cols-1 gap-4">
-                   <input type="text" value={data.header.name} onChange={e => updateHeader('name', e.target.value)} className="w-full border border-stone-300 p-2 rounded font-bold focus:border-[#8B1515] focus:outline-none" placeholder="Nombre del Héroe" />
-                   <div className="grid grid-cols-2 gap-4">
-                     <div>
-                       <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Especie</label>
-                       <select value={data.header.race} onChange={e => updateHeader('race', e.target.value)} className="w-full border border-stone-300 p-2 rounded text-sm focus:outline-none">
-                         {Object.keys(SPECIES_2024).map(s => <option key={s} value={s}>{s}</option>)}
-                       </select>
-                     </div>
-                     <div>
-                       <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Trasfondo</label>
-                       <select value={data.header.background} onChange={handleBackgroundChange} className="w-full border border-stone-300 p-2 rounded text-sm focus:outline-none">
-                         {Object.keys(BACKGROUNDS_2024).map(b => {
-                           const bd = BACKGROUNDS_2024[b];
-                           const sText = bd.asis.map(a => ATTRS.find(at => at.key === a)?.short).join('/');
-                           return <option key={b} value={b}>{b} (+{sText})</option>;
-                         })}
-                       </select>
-                     </div>
-                   </div>
-                 </div>
-                 
-                 <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col gap-3 shadow-inner mt-6">
-                    <div className="flex justify-between items-center">
-                      <p className="text-[10px] font-bold text-stone-400 uppercase">Clases Actuales</p>
-                      <button onClick={openLevelUpWizard} className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-md hover:bg-green-700 transition-colors flex items-center gap-2">
-                        <TrendingUp size={14}/> Subir Nivel
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      {data.classes.map((c, i) => (
-                        <div key={c.id} className="flex justify-between items-center bg-white p-2 rounded border border-stone-200">
-                          <div>
-                            {i === 0 ? (
-                              <select value={c.name} onChange={(e) => handlePrimaryClassChange(e.target.value)} className="font-black text-sm bg-transparent focus:outline-none text-[#8B1515] cursor-pointer border-b border-dashed border-[#8B1515]/50">
-                                {Object.keys(CLASSES_2024).map(cls => <option key={cls} value={cls}>{cls}</option>)}
-                              </select>
-                            ) : (
-                              <span className="font-bold text-sm text-stone-700">{c.name}</span>
-                            )}
-                            {c.subclass && <span className="text-[10px] ml-2 text-stone-500 uppercase">({c.subclass})</span>}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold bg-stone-100 px-2 py-0.5 rounded">Nvl {c.level}</span>
-                            {i > 0 && <button onClick={() => handleRemoveClass(i)} className="text-stone-300 hover:text-red-500"><X size={14}/></button>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-end border-b pb-1">
-                  <h3 className="font-bold text-stone-800 uppercase text-xs tracking-wider">Atributos Base</h3>
-                  <div className="flex gap-2">
-                    <button onClick={handleRollDice} className="flex items-center gap-1 bg-stone-200 text-stone-700 px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-stone-300 transition-colors" title="Tira 4d6 y descarta el menor">
-                      <Dices size={14}/> Tirar
-                    </button>
-                    <button onClick={handleDistribute} className="flex items-center gap-1 bg-[#8B1515] text-white px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-[#701010] transition-colors" title="Auto-asignar">
-                      <Sparkles size={14}/> Auto-Asignar
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                   {ATTRS.map(a => {
-                     const totalBonus = (data.asi.plus2 === a.key ? 2 : 0) + (data.asi.plus1 === a.key ? 1 : 0);
-                     return (
-                       <div key={a.key} className="text-center relative flex flex-col">
-                         <label className="text-[10px] font-bold text-stone-400 uppercase mb-1 flex items-center justify-between">
-                           {a.name}
-                           {totalBonus > 0 && <span className="text-[9px] bg-green-100 text-green-700 px-1 rounded">+{totalBonus}</span>}
-                         </label>
-                         <input type="number" value={data.baseStats[a.key]} onChange={e => updateBaseStat(a.key, e.target.value)} className={`w-full border p-2 rounded text-center font-bold text-lg focus:outline-none ${totalBonus > 0 ? 'border-green-400 bg-green-50' : 'border-stone-300 focus:border-[#8B1515]'}`} />
-                       </div>
-                     );
-                   })}
-                </div>
+              <h2 className="text-3xl font-serif font-black text-[#701010] tracking-tight uppercase">Constructor de Héroe</h2>
+              <div className="bg-white text-stone-600 px-4 py-2 rounded-lg text-sm font-black border border-[#E5DEC3] shadow-sm">
+                Nivel Total: <span className="text-[#8B1515] text-lg">{totalLevel}</span>
               </div>
             </div>
 
-            {/* NUEVA INTERFAZ DE CLASE TIPO D&D BEYOND */}
-            <div className="space-y-6 border-t border-stone-200 pt-8 mt-8">
-              <h3 className="font-black text-stone-800 uppercase text-sm tracking-widest">Selecciona tu Clase</h3>
+            {/* SECCIÓN 1: Identidad y Origen */}
+            <div className="space-y-4">
+               <h3 className="font-bold font-serif text-stone-800 border-b-2 border-[#D4AF37]/30 pb-2 uppercase text-sm tracking-widest text-[#8B1515]">1. Identidad y Origen</h3>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                 <div>
+                   <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1.5 tracking-wider">Nombre del Personaje</label>
+                   <input type="text" value={data.header.name} onChange={e => updateHeader('name', e.target.value)} className="w-full border border-[#E5DEC3] bg-white p-2.5 rounded-lg font-bold font-serif text-lg focus:border-[#8B1515] focus:ring-1 focus:ring-[#8B1515] focus:outline-none transition-all shadow-sm" placeholder="Ej. Drizzt Do'Urden" />
+                 </div>
+                 <div>
+                   <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1.5 tracking-wider">Especie</label>
+                   <select value={data.header.race} onChange={e => updateHeader('race', e.target.value)} className="w-full border border-[#E5DEC3] bg-white p-2.5 rounded-lg text-sm font-bold text-stone-700 focus:outline-none focus:border-[#D4AF37] shadow-sm transition-colors">
+                     {Object.keys(SPECIES_2024).map(s => <option key={s} value={s}>{s}</option>)}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1.5 tracking-wider">Trasfondo</label>
+                   <select value={data.header.background} onChange={handleBackgroundChange} className="w-full border border-[#E5DEC3] bg-white p-2.5 rounded-lg text-sm font-bold text-stone-700 focus:outline-none focus:border-[#D4AF37] shadow-sm transition-colors">
+                     {Object.keys(BACKGROUNDS_2024).map(b => {
+                       const bd = BACKGROUNDS_2024[b];
+                       const sText = bd.asis.map(a => ATTRS.find(at => at.key === a)?.short).join('/');
+                       return <option key={b} value={b}>{b} (+{sText})</option>;
+                     })}
+                   </select>
+                 </div>
+               </div>
+            </div>
+
+            {/* SECCIÓN 2: Clase */}
+            <div className="space-y-6 pt-6">
+              <h3 className="font-bold font-serif text-stone-800 border-b-2 border-[#D4AF37]/30 pb-2 uppercase text-sm tracking-widest text-[#8B1515]">2. Vocación de Clase</h3>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                 {Object.keys(CLASSES_2024).map(cls => {
@@ -691,13 +796,13 @@
                      <button 
                        key={`card-${cls}`}
                        onClick={() => handlePrimaryClassChange(cls)}
-                       className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${isSelected ? 'border-[#8B1515] bg-red-50 ring-1 ring-[#8B1515] shadow-md scale-[1.02]' : 'border-stone-200 bg-white hover:border-stone-300 hover:shadow-sm'}`}
+                       className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-2 ${isSelected ? 'border-[#D4AF37] bg-white shadow-md ring-2 ring-[#D4AF37]/50 scale-[1.02]' : 'border-[#E5DEC3] bg-white/50 hover:bg-white hover:border-[#D4AF37]/50 hover:shadow-sm'}`}
                      >
-                       <div className="flex items-center gap-2 font-black text-sm text-stone-800">
-                         <span className={isSelected ? 'text-[#8B1515]' : 'text-stone-500'}>{CLASS_ICONS[cls] || <Sword size={18}/>}</span>
-                         {cls}
+                       <div className="flex items-center gap-2 font-black font-serif text-sm text-stone-800">
+                         <span className={isSelected ? 'text-[#8B1515]' : 'text-stone-400'}>{CLASS_ICONS[cls] || <Sword size={18}/>}</span>
+                         <span className={isSelected ? 'text-[#8B1515]' : 'text-stone-700'}>{cls}</span>
                        </div>
-                       <div className="text-[10px] font-medium text-stone-500 leading-tight">
+                       <div className="text-[10px] font-bold text-stone-500 leading-tight bg-stone-100 px-2 py-1 rounded inline-block self-start">
                          d{clsData.hd} PV • {getAttrName(clsData.primary)}
                        </div>
                      </button>
@@ -705,35 +810,36 @@
                 })}
               </div>
 
-              {/* Panel de Detalles */}
-              <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden mt-4">
-                 <div className="bg-stone-50 p-4 border-b border-stone-200 flex items-center gap-4">
-                    <div className="p-3 bg-white rounded-xl shadow-sm border border-stone-200 text-[#8B1515]">
-                       {CLASS_ICONS[primaryClass] || <Sword size={24}/>}
+              {/* Panel de Detalles de Clase */}
+              <div className="bg-white rounded-xl border border-[#E5DEC3] shadow-sm overflow-hidden mt-4">
+                 <div className="bg-stone-50 p-5 border-b border-[#E5DEC3] flex items-center gap-5">
+                    <div className="p-4 bg-gradient-to-br from-[#701010] to-[#8B1515] rounded-xl shadow-inner text-[#F4F1EA] border border-[#D4AF37]/50">
+                       {CLASS_ICONS[primaryClass] || <Sword size={32}/>}
                     </div>
                     <div>
-                       <h4 className="font-black text-xl text-stone-800">{primaryClass}</h4>
-                       <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mt-0.5">Atributo Principal: <span className="text-[#8B1515]">{getAttrName(primaryClassData.primary)}</span> | Dado de Golpe: <span className="text-[#8B1515]">d{primaryClassData.hd}</span></p>
+                       <h4 className="font-black font-serif text-2xl text-[#701010]">{primaryClass}</h4>
+                       <p className="text-xs font-bold text-stone-500 uppercase tracking-widest mt-1">Atributo Principal: <span className="text-[#8B1515] bg-[#8B1515]/10 px-1.5 rounded">{getAttrName(primaryClassData.primary)}</span> | Dado de Golpe: <span className="text-[#8B1515] bg-[#8B1515]/10 px-1.5 rounded">d{primaryClassData.hd}</span></p>
                     </div>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-200">
+                 <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#E5DEC3]">
                     <div className="p-6 bg-white">
-                      <h5 className="font-bold text-xs uppercase text-stone-400 mb-4 tracking-widest">Subclases (Nivel 3)</h5>
+                      <h5 className="font-bold font-serif text-sm uppercase text-stone-400 mb-4 tracking-widest">Subclases Disponibles (Nivel 3)</h5>
                       <div className="space-y-3">
                          {primaryClassData.subclasses.map(sub => (
-                           <div key={`sub-${sub}`} className="p-3 bg-stone-50 border border-stone-100 rounded-lg hover:border-stone-300 transition-colors">
-                              <p className="font-bold text-sm text-stone-700">{sub}</p>
+                           <div key={`sub-${sub.name}`} className="p-3 bg-[#F4F1EA]/50 border border-[#E5DEC3] rounded-lg">
+                              <p className="font-bold text-sm text-[#701010] font-serif">{sub.name}</p>
+                              <p className="text-[10px] text-stone-600 mt-1 leading-relaxed">{sub.desc}</p>
                            </div>
                          ))}
                       </div>
                     </div>
                     <div className="p-6 bg-white">
-                      <h5 className="font-bold text-xs uppercase text-stone-400 mb-4 tracking-widest">Rasgos Destacados</h5>
+                      <h5 className="font-bold font-serif text-sm uppercase text-stone-400 mb-4 tracking-widest">Rasgos Destacados</h5>
                       <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                          {primaryClassData.features.slice(0, 5).map(feat => (
                            <div key={`desc-${feat.name}`}>
-                              <p className="font-bold text-sm text-stone-800 flex items-center gap-2">
+                              <p className="font-bold text-sm text-stone-800 flex items-center gap-2 font-serif">
                                 {feat.name} 
                                 <span className="text-[9px] font-black uppercase text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">Nvl {feat.level}</span>
                               </p>
@@ -745,28 +851,95 @@
                  </div>
               </div>
 
-              {/* Multiclase Activa */}
-              {data.classes.length > 1 && (
-                <div className="mt-6 p-4 bg-stone-50 border border-stone-200 rounded-xl shadow-inner">
-                   <h5 className="font-bold text-xs uppercase text-stone-500 mb-3 tracking-widest">Multiclase Activa</h5>
-                   <div className="space-y-2">
-                      {data.classes.slice(1).map((c, i) => (
-                        <div key={`multi-${c.id}`} className="flex justify-between items-center bg-white p-3 rounded-lg border border-stone-200 shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="text-stone-400">{CLASS_ICONS[c.name] || <Sword size={16}/>}</span>
-                            <span className="font-bold text-sm text-stone-800">{c.name}</span>
-                            {c.subclass && <span className="text-[10px] ml-2 font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 uppercase">{c.subclass}</span>}
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-xs font-black text-stone-600 bg-stone-100 px-2 py-1 rounded">Nvl {c.level}</span>
-                            <button onClick={() => handleRemoveClass(i + 1)} className="text-stone-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50" title="Eliminar Clase"><X size={16}/></button>
-                          </div>
+              {/* Clases Actuales y Multiclase Activa */}
+              <div className="mt-6 p-5 bg-white border border-[#D4AF37]/50 rounded-xl shadow-sm">
+                 <h5 className="font-bold font-serif text-sm uppercase text-[#8B1515] mb-4 tracking-widest">Progreso de Clases Activas</h5>
+                 <div className="space-y-3">
+                    {data.classes.map((c, i) => (
+                      <div key={`multi-${c.id}`} className="flex justify-between items-center bg-[#F4F1EA] p-3 rounded-lg border border-[#E5DEC3]">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[#8B1515] opacity-70">{CLASS_ICONS[c.name] || <Sword size={16}/>}</span>
+                          <span className="font-bold font-serif text-base text-stone-800">{c.name}</span>
+                          {c.subclass && <span className="text-[10px] ml-2 font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wider">{c.subclass}</span>}
                         </div>
-                      ))}
-                   </div>
-                </div>
-              )}
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-black text-stone-700 bg-white border border-[#E5DEC3] px-3 py-1 rounded-md shadow-sm">Nivel {c.level}</span>
+                          {i > 0 && <button onClick={() => handleRemoveClass(i)} className="text-stone-400 hover:text-red-600 transition-colors p-1.5 rounded-full hover:bg-red-50" title="Eliminar Multiclase"><X size={16}/></button>}
+                        </div>
+                      </div>
+                    ))}
+                 </div>
+              </div>
             </div>
+
+            {/* SECCIÓN 3: Atributos */}
+            <div className="space-y-5 pt-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end border-b-2 border-[#D4AF37]/30 pb-2 gap-4">
+                <h3 className="font-bold font-serif text-stone-800 uppercase text-sm tracking-widest text-[#8B1515]">3. Atributos Base</h3>
+                <div className="flex gap-2">
+                  <button onClick={handleRollDice} className="flex items-center gap-1.5 bg-white border border-[#E5DEC3] text-stone-700 px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-stone-50 transition-colors shadow-sm" title="Tira 4d6 y descarta el menor">
+                    <Dices size={14}/> Tirar Dados
+                  </button>
+                  <button onClick={handleDistribute} className="flex items-center gap-1.5 bg-[#8B1515] text-[#F4F1EA] px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-[#701010] transition-colors shadow-md border border-[#D4AF37]/50" title="Auto-asignar según tu clase seleccionada">
+                    <Sparkles size={14}/> Asignación Óptima
+                  </button>
+                </div>
+              </div>
+
+              {/* CONTROLES DE TRASFONDO (ASI) */}
+              <div className="bg-amber-50/80 p-5 rounded-xl border border-amber-200 mb-6 flex flex-col md:flex-row gap-6 items-center justify-between shadow-inner">
+                 <div>
+                   <p className="text-sm font-black font-serif text-amber-900 uppercase tracking-widest">Mejoras de Trasfondo</p>
+                   <p className="text-[11px] text-amber-700 font-medium mt-1">Aplica tu bonificador +2 y +1. (Opciones de {data.header.background})</p>
+                 </div>
+                 <div className="flex gap-4 w-full md:w-auto">
+                   <div className="flex-1 md:w-40">
+                     <label className="block text-[9px] font-black text-amber-800 uppercase mb-1.5 tracking-widest">+2 Principal</label>
+                     <select 
+                        value={data.asi.plus2} 
+                        onChange={e => setData(prev => ({...prev, asi: {...prev.asi, plus2: e.target.value}}))} 
+                        className="w-full border border-amber-300 bg-white rounded-lg p-2 text-xs font-bold text-amber-900 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-sm cursor-pointer"
+                     >
+                       {BACKGROUNDS_2024[data.header.background].asis.map(attr => (
+                         <option key={`p2-${attr}`} value={attr} disabled={attr === data.asi.plus1}>{ATTRS.find(a => a.key === attr).name}</option>
+                       ))}
+                     </select>
+                   </div>
+                   <div className="flex-1 md:w-40">
+                     <label className="block text-[9px] font-black text-amber-800 uppercase mb-1.5 tracking-widest">+1 Secundario</label>
+                     <select 
+                        value={data.asi.plus1} 
+                        onChange={e => setData(prev => ({...prev, asi: {...prev.asi, plus1: e.target.value}}))} 
+                        className="w-full border border-amber-300 bg-white rounded-lg p-2 text-xs font-bold text-amber-900 focus:outline-none focus:ring-1 focus:ring-amber-500 shadow-sm cursor-pointer"
+                     >
+                       {BACKGROUNDS_2024[data.header.background].asis.map(attr => (
+                         <option key={`p1-${attr}`} value={attr} disabled={attr === data.asi.plus2}>{ATTRS.find(a => a.key === attr).name}</option>
+                       ))}
+                     </select>
+                   </div>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                 {ATTRS.map(a => {
+                   const totalBonus = (data.asi.plus2 === a.key ? 2 : 0) + (data.asi.plus1 === a.key ? 1 : 0);
+                   return (
+                     <div key={a.key} className={`text-center relative flex flex-col p-4 rounded-xl border transition-all ${totalBonus > 0 ? 'bg-amber-50 border-amber-300 shadow-sm ring-1 ring-amber-200' : 'bg-white border-[#E5DEC3] shadow-sm'}`}>
+                       <label className="text-[11px] font-black text-stone-500 uppercase mb-3 flex flex-col items-center gap-1.5 tracking-widest">
+                         {a.name}
+                         {totalBonus > 0 ? (
+                           <span className="text-[9px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded shadow-sm">+ {totalBonus} Trasfondo</span>
+                         ) : (
+                           <span className="text-[9px] text-transparent px-2 py-0.5">-</span>
+                         )}
+                       </label>
+                       <input type="number" value={data.baseStats[a.key]} onChange={e => updateBaseStat(a.key, e.target.value)} className={`w-full border p-2 rounded-lg text-center font-black font-serif text-2xl focus:outline-none transition-colors ${totalBonus > 0 ? 'border-amber-400 bg-amber-100/50 text-amber-950' : 'border-[#E5DEC3] focus:border-[#8B1515] bg-stone-50'}`} />
+                     </div>
+                   );
+                 })}
+              </div>
+            </div>
+
           </div>
         );
       }
@@ -775,58 +948,72 @@
         const skillsProf = bgData.skills || [];
         const passiveP = 10 + mods.wis + (skillsProf.includes('perception') || data.manualSkills.includes('perception') ? profBonus : 0);
         
+        const attrColors = {
+          str: 'bg-red-100 text-red-800 border-red-200',
+          dex: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+          con: 'bg-orange-100 text-orange-800 border-orange-200',
+          int: 'bg-blue-100 text-blue-800 border-blue-200',
+          wis: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+          cha: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200'
+        };
+
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 animate-in fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 animate-in fade-in">
             
             {/* Columna Izquierda: Stats y Habilidades */}
-            <div className="lg:col-span-4 space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-                <h3 className="font-bold text-[10px] text-stone-400 uppercase border-b mb-3 pb-1">Atributos y Modificadores</h3>
-                <div className="grid grid-cols-3 gap-2">
+            <div className="lg:col-span-4 space-y-5">
+              <div className="bg-white p-5 rounded-xl border border-[#E5DEC3] shadow-sm">
+                <h3 className="font-bold font-serif text-xs text-stone-500 uppercase border-b-2 border-[#E5DEC3] mb-4 pb-2 tracking-widest text-center">Atributos y Modificadores</h3>
+                <div className="grid grid-cols-3 gap-3">
                   {ATTRS.map(a => (
-                    <div key={`attr-box-${a.key}`} className="bg-stone-50 p-2 rounded border text-center">
-                      <p className="text-[9px] font-bold text-stone-400 uppercase">{a.short}</p>
-                      <p className="text-lg font-black">{formatMod(mods[a.key])}</p>
-                      <p className="text-[9px] text-stone-400 bg-white border rounded mx-1 mt-1">{stats[a.key]}</p>
+                    <div key={`attr-box-${a.key}`} className="bg-[#F4F1EA] p-2.5 rounded-lg border border-[#E5DEC3] text-center shadow-inner">
+                      <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest">{a.short}</p>
+                      <p className="text-2xl font-black font-serif text-[#701010] my-0.5">{formatMod(mods[a.key])}</p>
+                      <p className="text-[10px] text-stone-500 bg-white border border-[#E5DEC3] rounded mx-2 py-0.5 shadow-sm font-bold">{stats[a.key]}</p>
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-                <h3 className="font-bold text-[10px] text-stone-400 uppercase border-b mb-3 pb-1">Tiradas de Salvación</h3>
-                <div className="space-y-1">
+              <div className="bg-white p-5 rounded-xl border border-[#E5DEC3] shadow-sm">
+                <h3 className="font-bold font-serif text-xs text-stone-500 uppercase border-b-2 border-[#E5DEC3] mb-4 pb-2 tracking-widest flex items-center gap-2"><Shield size={14}/> Tiradas de Salvación</h3>
+                <div className="space-y-1.5">
                   {ATTRS.map(a => {
                     const isP = primaryClassData.saves.includes(a.key) || data.manualSaves.includes(a.key);
                     const isAuto = primaryClassData.saves.includes(a.key);
                     return (
-                      <div key={`save-${a.key}`} className="flex justify-between text-xs p-1 rounded hover:bg-stone-50 items-center">
-                        <div className="flex items-center gap-1.5">
-                          <input type="checkbox" checked={isP} onChange={() => toggleSave(a.key)} disabled={isAuto} className="w-3 h-3 accent-stone-800" />
-                          <span className={isP ? 'font-bold text-black' : 'text-stone-600'}>{a.name}</span>
+                      <div key={`save-${a.key}`} className="flex justify-between text-xs p-1.5 rounded-md hover:bg-[#F4F1EA] items-center transition-colors">
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" checked={isP} onChange={() => toggleSave(a.key)} disabled={isAuto} className="w-4 h-4 accent-[#8B1515] cursor-pointer" />
+                          <span className={isP ? 'font-black text-[#701010]' : 'text-stone-600 font-medium'}>{a.name}</span>
                         </div>
-                        <span className="font-bold tabular-nums text-stone-800">{formatMod(mods[a.key] + (isP ? profBonus : 0))}</span>
+                        <span className={`font-black tabular-nums text-sm ${isP ? 'text-[#8B1515]' : 'text-stone-400'}`}>{formatMod(mods[a.key] + (isP ? profBonus : 0))}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
               
-              <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-                 <div className="flex justify-between items-center mb-3 border-b pb-1">
-                   <h3 className="font-bold text-[10px] text-stone-400 uppercase">Habilidades</h3>
-                   <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">Pasiva: {passiveP}</span>
+              <div className="bg-white p-5 rounded-xl border border-[#E5DEC3] shadow-sm">
+                 <div className="flex justify-between items-center mb-2 border-b-2 border-[#E5DEC3] pb-2">
+                   <h3 className="font-bold font-serif text-xs text-stone-500 uppercase tracking-widest">Habilidades</h3>
+                   <span className="text-[10px] font-black text-[#F4F1EA] bg-[#8B1515] px-2 py-1 rounded shadow-sm">Pasiva: {passiveP}</span>
                  </div>
-                 <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin">
+                 <p className="text-[10px] text-stone-400 mb-4 leading-snug italic px-1">Casillas pre-marcadas por clase/trasfondo. Activa extras si obtienes la dote 'Habilidoso'.</p>
+                 <div className="space-y-1 max-h-[450px] overflow-y-auto pr-2 scrollbar-thin">
                    {SKILLS_LIST.map(s => {
                      const isP = skillsProf.includes(s.key) || data.manualSkills.includes(s.key);
+                     const attrBadge = attrColors[s.attr] || 'bg-stone-100 text-stone-500 border-stone-200';
+                     const attrShort = ATTRS.find(a => a.key === s.attr)?.short;
+
                      return (
-                       <div key={`skill-${s.key}`} className="flex justify-between text-[11px] p-1 border-b border-stone-50 items-center group hover:bg-stone-50">
-                         <div className="flex items-center gap-1.5">
-                           <input type="checkbox" checked={isP} onChange={() => toggleSkill(s.key)} disabled={skillsProf.includes(s.key)} className="w-3 h-3 accent-stone-800" />
-                           <span className={isP ? 'font-bold text-black' : 'text-stone-600'}>{s.name}</span>
+                       <div key={`skill-${s.key}`} className="flex justify-between text-xs p-2 border-b border-[#F4F1EA] items-center group hover:bg-[#F4F1EA] rounded-md transition-colors">
+                         <div className="flex items-center gap-2.5">
+                           <input type="checkbox" checked={isP} onChange={() => toggleSkill(s.key)} disabled={skillsProf.includes(s.key)} className="w-4 h-4 accent-[#8B1515] cursor-pointer" />
+                           <span className={isP ? 'font-black text-[#701010]' : 'text-stone-600 font-medium'}>{s.name}</span>
+                           <span className={`text-[8px] px-1.5 py-0.5 rounded border font-black uppercase shadow-sm ${attrBadge}`}>{attrShort}</span>
                          </div>
-                         <span className="font-bold text-stone-500 tabular-nums">{formatMod(mods[s.attr] + (isP ? profBonus : 0))}</span>
+                         <span className={`font-black tabular-nums text-sm ${isP ? 'text-[#8B1515]' : 'text-stone-400'}`}>{formatMod(mods[s.attr] + (isP ? profBonus : 0))}</span>
                        </div>
                      );
                    })}
@@ -835,68 +1022,115 @@
             </div>
 
             {/* Columna Derecha: Combate, Armería y Rasgos */}
-            <div className="lg:col-span-8 space-y-4">
+            <div className="lg:col-span-8 space-y-5">
                
-               <div className="bg-[#B22222] text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
-                 <div className="absolute top-[-20%] right-[-10%] opacity-10 rotate-12 pointer-events-none"><Shield size={160}/></div>
-                 <h2 className="text-3xl font-black mb-1 truncate relative z-10">{data.header.name}</h2>
-                 <p className="text-red-200 font-bold uppercase text-xs tracking-wide relative z-10">
-                   {data.classes.map(c=>`${c.name}${c.subclass?' ('+c.subclass+')':''} ${c.level}`).join(' / ')} • {data.header.race}
+               {/* CABECERA HEROICA */}
+               <div className="bg-gradient-to-br from-[#701010] via-[#8B1515] to-[#5a0c0c] text-white p-6 md:p-8 rounded-2xl shadow-xl relative overflow-hidden border border-[#D4AF37]/50">
+                 <div className="absolute top-[-20%] right-[-5%] opacity-10 rotate-12 pointer-events-none mix-blend-overlay"><Shield size={220}/></div>
+                 
+                 <div className="absolute top-6 right-6 z-20">
+                   <button onClick={openLevelUpWizard} className="flex items-center gap-2 bg-[#F4F1EA] text-[#8B1515] hover:bg-white px-5 py-2.5 rounded-lg text-sm font-black transition-colors shadow-lg border border-[#D4AF37]">
+                     <TrendingUp size={18}/> SUBIR NIVEL
+                   </button>
+                 </div>
+
+                 <h2 className="text-4xl md:text-5xl font-serif font-black mb-2 truncate relative z-10 pr-40 drop-shadow-md text-[#F4F1EA]">{data.header.name}</h2>
+                 <p className="text-[#D4AF37] font-bold uppercase text-xs md:text-sm tracking-widest relative z-10 drop-shadow">
+                   {data.classes.map(c=>`${c.name}${c.subclass?' ('+c.subclass+')':''} Nvl.${c.level}`).join(' / ')} • {data.header.race}
                  </p>
-                 <div className="flex gap-3 mt-6 relative z-10">
-                   <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
-                     <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Vida Máx</p><p className="text-3xl font-black">{hpMax}</p>
+                 
+                 <div className="flex gap-4 mt-8 relative z-10">
+                   <div className="bg-black/30 backdrop-blur-sm flex-1 py-4 rounded-xl border border-white/20 text-center shadow-inner">
+                     <p className="text-[10px] md:text-xs text-[#E5DEC3] uppercase font-black tracking-widest mb-1">Puntos Golpe</p>
+                     <p className="text-3xl md:text-4xl font-serif font-black text-white">{hpMax}</p>
                    </div>
-                   <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
-                     <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Armadura</p><p className="text-3xl font-black">{ac}</p>
+                   <div className="bg-black/30 backdrop-blur-sm flex-1 py-4 rounded-xl border border-white/20 text-center shadow-inner">
+                     <p className="text-[10px] md:text-xs text-[#E5DEC3] uppercase font-black tracking-widest mb-1">Clase Armadura</p>
+                     <p className="text-3xl md:text-4xl font-serif font-black text-white">{ac}</p>
                    </div>
-                   <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
-                     <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Profic.</p><p className="text-3xl font-black">+{profBonus}</p>
+                   <div className="bg-black/30 backdrop-blur-sm flex-1 py-4 rounded-xl border border-white/20 text-center shadow-inner">
+                     <p className="text-[10px] md:text-xs text-[#E5DEC3] uppercase font-black tracking-widest mb-1">Bono Proficiencia</p>
+                     <p className="text-3xl md:text-4xl font-serif font-black text-white">+{profBonus}</p>
                    </div>
                  </div>
                </div>
 
-               <div className="bg-white p-4 md:p-6 rounded-xl border border-stone-200 shadow-sm">
-                  <h3 className="font-bold text-sm uppercase text-stone-800 border-b mb-4 pb-2 flex items-center gap-2"><Backpack size={16}/> Equipamiento Rápido</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+               <div className="bg-white p-5 md:p-8 rounded-xl border border-[#E5DEC3] shadow-sm">
+                  <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-5 pb-2 flex items-center gap-2 tracking-widest"><Backpack size={18}/> Equipamiento Activo</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
                     {renderEquipmentSelector('mainHand', 'Arma Principal', ITEM_COMPENDIUM.weapons)}
                     {renderEquipmentSelector('offHand', 'Mano Secundaria', [...ITEM_COMPENDIUM.weapons.filter(w=>w.hands===1), ...ITEM_COMPENDIUM.shields])}
-                    {renderEquipmentSelector('chest', 'Armadura', ITEM_COMPENDIUM.armor)}
-                    {renderEquipmentSelector('ring1', 'Anillo / Accesorio', ITEM_COMPENDIUM.magic)}
+                    {renderEquipmentSelector('chest', 'Armadura Vestida', ITEM_COMPENDIUM.armor)}
+                    {renderEquipmentSelector('ring1', 'Accesorio Mágico', ITEM_COMPENDIUM.magic)}
                   </div>
 
-                  <h3 className="font-bold text-sm uppercase text-[#8B1515] border-b mb-3 pb-2 flex items-center gap-2"><Sword size={16}/> Ataques en Combate</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
-                      <thead className="text-stone-400 uppercase text-[9px] bg-stone-50 border-y">
-                        <tr><th className="p-2">Arma</th><th className="p-2 text-center">Bono Atq</th><th className="p-2">Daño (Tipo)</th></tr>
+                  <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-4 pb-2 flex items-center gap-2 tracking-widest"><Sword size={18}/> Acciones de Combate</h3>
+                  <div className="overflow-x-auto rounded-lg border border-[#E5DEC3]">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-stone-500 uppercase text-[10px] bg-[#F4F1EA] border-b border-[#E5DEC3] tracking-widest font-black">
+                        <tr><th className="p-3">Arma Equipada</th><th className="p-3 text-center">Bono Ataque</th><th className="p-3">Daño y Tipo</th></tr>
                       </thead>
                       <tbody>
                         {['mainHand', 'offHand'].map(s => {
                           const w = data.equipment[s]; if (!w || w.type === 'shield') return null;
                           const sm = w.prop === 'finesse' ? Math.max(mods.str, mods.dex) : (w.prop === 'dex' ? mods.dex : mods.str);
                           return (
-                            <tr key={`atk-${s}`} className="border-b h-10 hover:bg-stone-50">
-                              <td className="p-2 font-bold text-stone-800">{w.name}</td>
-                              <td className="p-2 font-black text-center text-base tabular-nums">{formatMod(sm + profBonus)}</td>
-                              <td className="p-2 font-bold">{w.damage} {formatMod(sm)} <span className="text-[8px] font-normal uppercase opacity-50 text-stone-500 ml-1">{w.dmgType}</span></td>
+                            <tr key={`atk-${s}`} className="border-b border-[#E5DEC3] last:border-0 h-12 hover:bg-stone-50 transition-colors">
+                              <td className="p-3 font-bold font-serif text-stone-800 text-base">{w.name}</td>
+                              <td className="p-3 font-black text-center text-lg text-[#8B1515] tabular-nums">{formatMod(sm + profBonus)}</td>
+                              <td className="p-3 font-black text-stone-700">{w.damage} <span className="text-stone-500 font-medium">{formatMod(sm)}</span> <span className="text-[9px] font-bold uppercase text-stone-400 ml-2 bg-stone-100 px-2 py-1 rounded-full">{w.dmgType}</span></td>
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
                   </div>
-                  <div className="mt-4 p-2 bg-stone-100 border border-stone-200 rounded text-xs flex gap-2 items-center">
-                     <Shield size={14} className="text-stone-400"/>
-                     <span className="font-bold text-stone-600 uppercase">Resistencias:</span> 
-                     <span className="font-medium">{autoResistances.length ? autoResistances.join(', ') : 'Ninguna'} {data.customResistances}</span>
+                  <div className="mt-5 p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg text-xs flex gap-3 items-center shadow-inner">
+                     <Shield size={16} className="text-indigo-400"/>
+                     <span className="font-black text-indigo-900 uppercase tracking-widest">Resistencias Activas:</span> 
+                     <span className="font-bold text-indigo-700">{autoResistances.length ? autoResistances.join(', ') : 'Ninguna natural'} {data.customResistances}</span>
                   </div>
                </div>
 
-               <div className="bg-stone-50 p-4 md:p-5 rounded-xl border border-stone-200 shadow-sm relative overflow-hidden">
-                  <div className="absolute right-0 top-0 bottom-0 w-2 bg-blue-400"></div>
-                  <h3 className="font-bold text-[10px] text-stone-400 uppercase mb-2">Dote de Origen: <span className="text-stone-800">{bgData.feat}</span></h3>
-                  <p className="text-sm text-stone-700 italic leading-snug">"{bgData.featDesc}"</p>
+               <div className="bg-amber-50/50 p-5 md:p-6 rounded-xl border border-amber-200 shadow-sm relative overflow-hidden flex gap-4 items-start">
+                  <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#D4AF37]"></div>
+                  <div className="bg-white p-2 rounded-lg shadow-sm border border-amber-200 text-amber-600"><BookOpen size={20}/></div>
+                  <div>
+                    <h3 className="font-black font-serif text-amber-900 text-sm uppercase tracking-widest mb-1">Dote de Trasfondo: <span className="text-[#8B1515]">{bgData.feat}</span></h3>
+                    <p className="text-xs text-amber-800 italic leading-relaxed font-medium">"{bgData.featDesc}"</p>
+                  </div>
+               </div>
+
+               {/* SECCIÓN DE RASGOS DE CLASE EN LA HOJA */}
+               <div className="bg-white p-5 md:p-8 rounded-xl border border-[#E5DEC3] shadow-sm mt-4">
+                 <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-6 pb-2 flex items-center gap-2 tracking-widest"><Sparkles size={18}/> Rasgos de Clase y Dotes Obtenidas</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                   
+                   {/* Dotes Obtenidas (Visualmente Distintas) */}
+                   {data.feats && data.feats.map((f, idx) => (
+                     <div key={`sheet-learned-feat-${idx}`} className="bg-gradient-to-br from-indigo-50 to-white p-5 rounded-xl border border-indigo-200 shadow-sm relative overflow-hidden">
+                       <div className="absolute -right-4 -top-4 opacity-5 text-indigo-900"><Sparkles size={80}/></div>
+                       <div className="flex justify-between items-start mb-3 relative z-10">
+                         <h4 className="font-black font-serif text-sm text-indigo-900 pr-2">{f.name}</h4>
+                         <span className="text-[9px] font-black uppercase text-indigo-700 bg-white px-2 py-1 rounded-md border border-indigo-200 shadow-sm whitespace-nowrap">{f.origin}</span>
+                       </div>
+                       <p className="text-xs text-indigo-800/80 leading-relaxed font-medium relative z-10">{f.desc}</p>
+                     </div>
+                   ))}
+
+                   {activeFeatures.length === 0 && (!data.feats || data.feats.length === 0) && <p className="text-sm text-stone-400 italic col-span-2 text-center py-8">Aún no has desbloqueado rasgos especiales de clase.</p>}
+                   
+                   {/* Rasgos de Clase Normales */}
+                   {activeFeatures.map((feat, idx) => (
+                     <div key={`sheet-feat-${idx}`} className="bg-[#F4F1EA]/50 p-5 rounded-xl border border-[#E5DEC3] shadow-sm hover:shadow-md transition-shadow">
+                       <div className="flex justify-between items-start mb-3">
+                         <h4 className="font-bold font-serif text-sm text-[#701010] pr-2">{feat.name}</h4>
+                         <span className="text-[9px] font-black uppercase text-stone-500 bg-white px-2 py-1 rounded-md border border-[#E5DEC3] shadow-sm whitespace-nowrap">Nivel {feat.level}</span>
+                       </div>
+                       <p className="text-xs text-stone-600 leading-relaxed font-medium">{feat.desc}</p>
+                     </div>
+                   ))}
+                 </div>
                </div>
 
             </div>
@@ -908,44 +1142,56 @@
         const prepSpells = apiSpells.filter(s => data.spells.includes(s.id));
         
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-in fade-in">
             
             {/* Columna de Habilidades y Catálogo */}
-            <div className="space-y-4">
-              <div className="bg-white p-5 md:p-6 rounded-xl border border-stone-200 shadow-sm">
-                <h3 className="font-bold text-sm mb-4 border-b pb-2 flex items-center gap-2"><Sparkles size={18} className="text-amber-500"/> Rasgos y Habilidades</h3>
-                <div className="grid gap-3">
-                  {activeFeatures.length === 0 && <p className="text-xs text-stone-400 italic">No tienes rasgos especiales aún.</p>}
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-xl border border-[#E5DEC3] shadow-sm">
+                <h3 className="font-bold font-serif text-base uppercase text-[#701010] border-b-2 border-[#D4AF37]/30 mb-5 pb-2 flex items-center gap-2 tracking-widest"><Sword size={18}/> Habilidades Activas</h3>
+                <div className="grid gap-4">
+                  {activeFeatures.length === 0 && <p className="text-sm text-stone-400 italic text-center py-6">No tienes habilidades con usos limitados aún.</p>}
                   {activeFeatures.map((f, i) => renderActionCardUI(`feat-${i}`, f.name, `Nv.${f.level} ${f.originClass || ''}`, f.desc, data.usedResources[f.name] || 0, f.maxUses || '-', () => useResource(f.name, f.maxUses), () => setData(prev => ({...prev, usedResources: {...prev.usedResources, [f.name]: 0}}))))}
                 </div>
               </div>
               
               {isSpellcaster && (
-                <div className="bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
-                  <h4 className="font-bold mb-4 text-xs uppercase text-stone-500 tracking-widest flex items-center gap-2">
-                    <Info size={14}/> Catálogo Mágico (SRD Open5e)
+                <div className="bg-[#F4F1EA] p-6 rounded-xl border border-[#E5DEC3] shadow-inner">
+                  <h4 className="font-bold font-serif text-base uppercase text-indigo-900 border-b-2 border-indigo-200 mb-5 pb-2 flex items-center gap-2 tracking-widest">
+                    <Info size={18} className="text-indigo-600"/> Catálogo Arcano (SRD)
                   </h4>
-                  <div className="flex gap-2 mb-4">
-                    <span className="text-[10px] bg-white border px-2 py-1 rounded shadow-sm font-bold text-stone-600">Trucos: {prepSpells.filter(s=>s.level===0).length}/{spellLimits.maxCantrips}</span>
-                    <span className="text-[10px] bg-white border px-2 py-1 rounded shadow-sm font-bold text-stone-600">Conjuros: {prepSpells.filter(s=>s.level>0).length}/{spellLimits.maxSpells}</span>
+                  <div className="flex gap-3 mb-5">
+                    <span className="flex-1 text-center text-[10px] bg-white border border-indigo-100 py-2 rounded-lg shadow-sm font-black text-indigo-800 uppercase tracking-widest">Trucos: {prepSpells.filter(s=>s.level===0).length} / {spellLimits.maxCantrips}</span>
+                    <span className="flex-1 text-center text-[10px] bg-white border border-indigo-100 py-2 rounded-lg shadow-sm font-black text-indigo-800 uppercase tracking-widest">Conjuros: {prepSpells.filter(s=>s.level>0).length} / {spellLimits.maxSpells}</span>
                   </div>
-                  <div className="max-h-[450px] overflow-y-auto space-y-1.5 pr-2 scrollbar-thin">
+                  <div className="max-h-[500px] overflow-y-auto space-y-5 pr-3 scrollbar-thin">
                     {isLoadingSpells ? (
-                      <div className="text-center p-8 text-stone-400">
-                        <Loader2 className="animate-spin inline-block mb-2" size={24} />
-                        <p className="text-xs font-bold uppercase tracking-widest">Invocando...</p>
+                      <div className="text-center p-12 text-indigo-400">
+                        <Loader2 className="animate-spin mx-auto mb-4" size={32} />
+                        <p className="text-xs font-black uppercase tracking-widest">Invocando Conocimiento...</p>
                       </div>
                     ) : (
-                      apiSpells.map((s, idx) => {
-                        const isPrep = data.spells.includes(s.id);
-                        const isCantrip = s.level === 0;
-                        const isLocked = !isPrep && ((isCantrip && prepSpells.filter(sp=>sp.level===0).length >= spellLimits.maxCantrips) || (!isCantrip && prepSpells.filter(sp=>sp.level>0).length >= spellLimits.maxSpells));
+                      Array.from({ length: spellLimits.maxSpellLevel + 1 }).map((_, lvl) => {
+                        const spellsOfLvl = apiSpells.filter(s => s.level === lvl);
+                        if (spellsOfLvl.length === 0) return null;
                         
                         return (
-                          <button key={`${s.id}-${idx}`} onClick={() => toggleSpell(s)} disabled={isLocked} className={`w-full text-left p-2 rounded border text-xs transition-all flex justify-between items-center ${isPrep ? 'bg-blue-600 text-white border-blue-700 shadow-inner' : isLocked ? 'bg-stone-200 text-stone-400 cursor-not-allowed' : 'bg-white hover:border-blue-300 hover:bg-blue-50'}`}>
-                            <span className="font-bold truncate max-w-[80%]">{s.name}</span> 
-                            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${isPrep ? 'bg-blue-800' : 'bg-stone-100 text-stone-500'}`}>{s.level === 0 ? 'Truco' : `Nvl ${s.level}`}</span>
-                          </button>
+                          <div key={`cat-lvl-${lvl}`} className="space-y-2">
+                            <h5 className="font-black font-serif text-xs text-indigo-900 uppercase border-b-2 border-indigo-200/50 pb-1 sticky top-0 bg-[#F4F1EA]/90 backdrop-blur-sm z-10 pt-2 tracking-widest">
+                              {lvl === 0 ? 'Trucos (Nivel 0)' : `Conjuros de Nivel ${lvl}`}
+                            </h5>
+                            {spellsOfLvl.map((s, idx) => {
+                              const isPrep = data.spells.includes(s.id);
+                              const isCantrip = s.level === 0;
+                              const isLocked = !isPrep && ((isCantrip && prepSpells.filter(sp=>sp.level===0).length >= spellLimits.maxCantrips) || (!isCantrip && prepSpells.filter(sp=>sp.level>0).length >= spellLimits.maxSpells));
+                              
+                              return (
+                                <button key={`${s.id}-${idx}`} onClick={() => toggleSpell(s)} disabled={isLocked} className={`w-full text-left p-3 rounded-lg border text-xs transition-all flex justify-between items-center shadow-sm ${isPrep ? 'bg-indigo-700 text-white border-indigo-800 shadow-inner' : isLocked ? 'bg-stone-200/50 text-stone-400 border-stone-200 cursor-not-allowed' : 'bg-white border-[#E5DEC3] hover:border-indigo-300 hover:bg-indigo-50 text-stone-700'}`}>
+                                  <span className={`font-bold truncate max-w-[75%] font-serif text-sm ${isPrep ? 'text-white' : 'text-stone-800'}`}>{s.name}</span> 
+                                  <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-md ${isPrep ? 'bg-indigo-900 text-indigo-100 shadow-inner' : 'bg-[#F4F1EA] text-stone-500 border border-[#E5DEC3]'}`}>{s.level === 0 ? 'Truco' : `Nvl ${s.level}`}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         );
                       })
                     )}
@@ -956,21 +1202,23 @@
 
             {/* Columna del Grimorio (Hechizos Preparados) */}
             {isSpellcaster && (
-              <div className="bg-white p-5 md:p-6 rounded-xl border border-blue-200 shadow-md">
-                 <div className="flex justify-between items-center mb-6 border-b border-blue-100 pb-3">
-                    <h3 className="font-bold text-blue-900 flex items-center gap-2 text-lg"><BookOpen size={20}/> Grimorio Activo</h3>
-                    <div className="text-[10px] font-black bg-blue-50 px-3 py-1.5 rounded-lg text-blue-800 border border-blue-100 shadow-sm flex gap-3">
-                      <span>CD {spellDC}</span> 
-                      <span className="border-l border-blue-200 pl-3">ATQ Mágico {formatMod(spellAttack)}</span>
+              <div className="bg-white p-6 md:p-8 rounded-xl border border-indigo-200 shadow-lg relative overflow-hidden">
+                 <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10"></div>
+                 
+                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8 border-b-2 border-indigo-100 pb-4">
+                    <h3 className="font-black font-serif text-indigo-900 flex items-center gap-3 text-2xl"><BookOpen size={28} className="text-indigo-600"/> Grimorio Activo</h3>
+                    <div className="text-xs font-black bg-indigo-50 px-4 py-2 rounded-xl text-indigo-900 border border-indigo-200 shadow-sm flex gap-4 tracking-widest uppercase">
+                      <span>CD Mágica: <span className="text-lg">{spellDC}</span></span> 
+                      <span className="border-l-2 border-indigo-200 pl-4">Ataque: <span className="text-lg">{formatMod(spellAttack)}</span></span>
                     </div>
                  </div>
                  
-                 <div className="space-y-6">
+                 <div className="space-y-8">
                    {prepSpells.length === 0 && (
-                     <div className="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl">
-                       <BookOpen size={32} className="mx-auto text-stone-300 mb-2"/>
-                       <p className="text-xs text-stone-500 font-medium">Tu grimorio está vacío.</p>
-                       <p className="text-[10px] text-stone-400 mt-1">Prepara hechizos desde el catálogo.</p>
+                     <div className="text-center py-20 border-2 border-dashed border-indigo-100 rounded-2xl bg-indigo-50/30">
+                       <BookOpen size={48} className="mx-auto text-indigo-200 mb-4"/>
+                       <p className="text-sm text-indigo-800 font-bold font-serif text-xl">Tu grimorio está vacío.</p>
+                       <p className="text-xs text-indigo-500 mt-2 font-medium">Estudia el catálogo arcano y prepara tus hechizos.</p>
                      </div>
                    )}
                    
@@ -980,12 +1228,12 @@
                      const slots = getSlotsForLevel(lvl);
                      
                      return (
-                       <div key={`prep-lvl-${lvl}`}>
-                         <div className="flex justify-between items-end border-b border-blue-100 pb-1 mb-3">
-                           <h5 className="font-bold text-xs text-blue-800 uppercase">{lvl === 0 ? 'Trucos Infinitos' : `Nivel ${lvl}`}</h5>
-                           {lvl > 0 && <span className="text-[9px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Espacios: {slots}</span>}
+                       <div key={`prep-lvl-${lvl}`} className="bg-[#F4F1EA]/30 p-4 rounded-xl border border-indigo-50">
+                         <div className="flex justify-between items-center border-b border-indigo-200 pb-2 mb-4">
+                           <h5 className="font-black font-serif text-sm text-indigo-900 uppercase tracking-widest">{lvl === 0 ? 'Trucos Infinitos' : `Poder de Nivel ${lvl}`}</h5>
+                           {lvl > 0 && <span className="text-[10px] font-black bg-indigo-600 text-white px-3 py-1 rounded-lg shadow-sm tracking-wider">Espacios: {slots}</span>}
                          </div>
-                         <div className="grid gap-3">
+                         <div className="grid gap-4">
                            {spellsOfLvl.map((s, i) => renderActionCardUI(`prep-${s.id}-${i}`, s.name, lvl === 0 ? 'Truco' : `Nivel ${lvl}`, s.fullDesc, data.usedResources[s.id] || 0, lvl === 0 ? 'Infinita' : slots, () => useResource(s.id, slots), () => setData(prev => ({...prev, usedResources: {...prev.usedResources, [s.id]: 0}})), true))}
                          </div>
                        </div>
@@ -1000,22 +1248,35 @@
 
       // --- RETURN PRINCIPAL ---
       return (
-        <div className="min-h-screen bg-stone-50 text-stone-900 font-sans pb-12">
-          <nav className="bg-[#8B1515] text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-            <div className="flex items-center gap-2"><Shield size={24}/><h1 className="font-black text-xl tracking-tighter uppercase">D&D 2024</h1></div>
+        <div className="min-h-screen bg-[#F4F1EA] text-stone-900 font-sans pb-12 selection:bg-[#8B1515] selection:text-white">
+          <nav className="bg-gradient-to-r from-[#5a0c0c] via-[#8B1515] to-[#701010] text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-50 border-b-[3px] border-[#D4AF37]">
+            <div className="flex items-center gap-3"><Shield size={28} className="text-[#D4AF37] drop-shadow-md"/><h1 className="font-black font-serif text-2xl tracking-widest uppercase hidden sm:block drop-shadow-md">D&D <span className="text-[#D4AF37]">2024</span></h1></div>
+            
+            <div className="flex items-center gap-3">
+              <button onClick={() => { if(window.confirm('¿Crear nuevo personaje? Asegúrate de guardar el actual primero o se perderá.')) setData(getInitialState()) }} className="flex items-center gap-2 bg-stone-800 hover:bg-stone-900 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md border border-stone-600">
+                <Plus size={14}/> <span className="hidden sm:inline">Nuevo</span>
+              </button>
+              <input type="file" accept=".json" id="import-file" style={{display: 'none'}} onChange={handleImport} />
+              <label htmlFor="import-file" className="cursor-pointer flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-xs font-bold transition-all border border-white/20 shadow-inner">
+                <UploadIcon size={14}/> <span className="hidden sm:inline">Cargar</span>
+              </label>
+              <button onClick={handleExport} className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#b5952f] text-stone-900 px-4 py-2 rounded-lg text-xs font-black transition-all shadow-md border border-[#b5952f]">
+                <SaveIcon size={14}/> <span className="hidden sm:inline">Guardar</span>
+              </button>
+            </div>
           </nav>
 
           {renderLevelUpModalUI()}
 
-          <main className="max-w-[1400px] mx-auto p-4 md:p-6">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 bg-white p-2 rounded-2xl shadow-sm border border-stone-200">
+          <main className="max-w-[1400px] mx-auto p-4 md:p-8">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 bg-white p-3 rounded-2xl shadow-md border border-[#E5DEC3]">
               {[
-                { id: 'Constructor', icon: <Wrench size={16}/>, label: 'CONSTRUCTOR' },
-                { id: 'Hoja', icon: <FileText size={16}/>, label: 'HOJA DE PERSONAJE' },
-                { id: 'Magia', icon: <Sparkles size={16}/>, label: 'RASGOS Y MAGIA' }
+                { id: 'Constructor', icon: <Wrench size={18}/>, label: 'CONSTRUCTOR' },
+                { id: 'Magia', icon: <Sparkles size={18}/>, label: 'RASGOS Y MAGIA' },
+                { id: 'Hoja', icon: <FileText size={18}/>, label: 'HOJA DE PERSONAJE' }
               ].map(tab => (
                 <button key={tab.id} onClick={() => setData(prev => ({...prev, activeTab: tab.id}))}
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${data.activeTab === tab.id ? 'bg-[#8B1515] text-white shadow-md' : 'text-stone-500 hover:bg-stone-50'}`}>
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-xs md:text-sm font-black transition-all tracking-widest ${data.activeTab === tab.id ? 'bg-[#8B1515] text-[#F4F1EA] shadow-md ring-2 ring-[#D4AF37]/50 font-serif' : 'text-stone-500 hover:bg-[#F4F1EA] hover:text-stone-800 border border-transparent'}`}>
                   {tab.icon} {tab.label}
                 </button>
               ))}
