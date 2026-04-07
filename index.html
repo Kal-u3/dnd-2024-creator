@@ -1,954 +1,1037 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Shield, FileText, User, Sparkles, 
-  Sword, Heart, Wrench, Dices, 
-  Backpack, BookOpen, Fingerprint, Shirt, Loader2, Info, Plus, X, TrendingUp, Eye
-} from 'lucide-react';
-
-// ==========================================
-// 1. CONSTANTES Y BASES DE DATOS (ESTÁTICAS)
-// ==========================================
-
-const ATTRS = [
-  { key: 'str', name: 'Fuerza', short: 'FUE' },
-  { key: 'dex', name: 'Destreza', short: 'DES' },
-  { key: 'con', name: 'Constitución', short: 'CON' },
-  { key: 'int', name: 'Inteligencia', short: 'INT' },
-  { key: 'wis', name: 'Sabiduría', short: 'SAB' },
-  { key: 'cha', name: 'Carisma', short: 'CAR' }
-];
-
-const SKILLS_LIST = [
-  { key: 'acrobatics', name: 'Acrobacias', attr: 'dex' },
-  { key: 'animalHandling', name: 'Trato Animales', attr: 'wis' },
-  { key: 'arcana', name: 'C. Arcano', attr: 'int' },
-  { key: 'athletics', name: 'Atletismo', attr: 'str' },
-  { key: 'deception', name: 'Engaño', attr: 'cha' },
-  { key: 'history', name: 'Historia', attr: 'int' },
-  { key: 'insight', name: 'Perspicacia', attr: 'wis' },
-  { key: 'intimidation', name: 'Intimidación', attr: 'cha' },
-  { key: 'investigation', name: 'Investigación', attr: 'int' },
-  { key: 'medicine', name: 'Medicina', attr: 'wis' },
-  { key: 'nature', name: 'Naturaleza', attr: 'int' },
-  { key: 'perception', name: 'Percepción', attr: 'wis' },
-  { key: 'performance', name: 'Interpretación', attr: 'cha' },
-  { key: 'persuasion', name: 'Persuasión', attr: 'cha' },
-  { key: 'religion', name: 'Religión', attr: 'int' },
-  { key: 'sleightOfHand', name: 'Juego de Manos', attr: 'dex' },
-  { key: 'stealth', name: 'Sigilo', attr: 'dex' },
-  { key: 'survival', name: 'Supervivencia', attr: 'wis' }
-];
-
-const CLASS_PRIORITIES = {
-  'Bárbaro': ['str', 'con', 'dex', 'wis', 'int', 'cha'],
-  'Bardo': ['cha', 'dex', 'con', 'wis', 'int', 'str'],
-  'Brujo': ['cha', 'con', 'dex', 'wis', 'int', 'str'],
-  'Clérigo': ['wis', 'con', 'str', 'dex', 'int', 'cha'],
-  'Druida': ['wis', 'con', 'dex', 'int', 'cha', 'str'],
-  'Explorador': ['dex', 'wis', 'con', 'str', 'int', 'cha'],
-  'Guerrero': ['str', 'con', 'dex', 'wis', 'int', 'cha'],
-  'Hechicero': ['cha', 'con', 'dex', 'wis', 'int', 'str'],
-  'Mago': ['int', 'con', 'dex', 'wis', 'cha', 'str'],
-  'Monje': ['dex', 'wis', 'con', 'str', 'int', 'cha'],
-  'Paladín': ['str', 'cha', 'con', 'wis', 'dex', 'int'],
-  'Pícaro': ['dex', 'con', 'int', 'wis', 'cha', 'str']
-};
-
-// Base de datos estática (se usará como respaldo si falla el JSON)
-const CLASSES_2024 = {
-  'Bárbaro': { hd: 12, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: ['Berserker', 'Árbol del Mundo', 'Tótem', 'Zelote'], features: [{ name: 'Furia', level: 1, desc: 'Ventaja en Fuerza, daño extra y resistencia física.', maxUses: 2, recover: 'Largo' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + CON (sin armadura).', maxUses: '-', recover: '-' }, { name: 'Ataque Extra', level: 5, desc: 'Dos ataques por acción.', maxUses: '-', recover: '-' }] },
-  'Bardo': { hd: 8, saves: ['dex', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Conocimiento', 'Valor', 'Glamour', 'Danza'], features: [{ name: 'Inspiración Bárdica', level: 1, desc: 'Dado extra (1d6) a un aliado.', maxUses: 3, recover: 'Largo' }, { name: 'Aprendiz de Todo', level: 2, desc: '+1/2 Proficiencia a pruebas sin ella.' }] },
-  'Brujo': { hd: 8, saves: ['wis', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Archihada', 'Celestial', 'Infernal', 'Gran Antiguo'], features: [{ name: 'Magia de Pacto', level: 1, desc: 'Espacios se recuperan con descanso corto.', maxUses: '-', recover: '-' }, { name: 'Invocaciones', level: 1, desc: 'Talentos mágicos permanentes.' }] },
-  'Clérigo': { hd: 8, saves: ['wis', 'cha'], primary: 'wis', spellcaster: true, subclasses: ['Vida', 'Luz', 'Guerra', 'Engaño'], features: [{ name: 'Canalizar Divinidad', level: 2, desc: 'Efectos divinos únicos.', maxUses: 1, recover: 'Corto' }] },
-  'Druida': { hd: 8, saves: ['int', 'wis'], primary: 'wis', spellcaster: true, subclasses: ['Luna', 'Tierra', 'Estrellas', 'Mar'], features: [{ name: 'Forma Salvaje', level: 2, desc: 'Te transformas en bestia.', maxUses: 2, recover: 'Corto' }] },
-  'Explorador': { hd: 10, saves: ['str', 'dex'], primary: 'wis', spellcaster: true, subclasses: ['Cazador', 'Señor Bestias', 'Gloom Stalker', 'Caminante Feérico'], features: [{ name: 'Marca del Cazador', level: 1, desc: 'Daño extra gratis.', maxUses: 2, recover: 'Largo' }] },
-  'Guerrero': { hd: 10, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: ['Campeón', 'Maestro Batalla', 'Caballero Arcano'], features: [{ name: 'Nuevos Bríos', level: 1, desc: 'Curas 1d10+nivel.', maxUses: 1, recover: 'Corto' }, { name: 'Oleada de Acción', level: 2, desc: 'Acción extra.', maxUses: 1, recover: 'Corto' }] },
-  'Hechicero': { hd: 6, saves: ['con', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Dracónico', 'Salvaje', 'Aberrante'], features: [{ name: 'Magia Innata', level: 1, desc: 'Ventaja en ataques de conjuro.', maxUses: 2, recover: 'Largo' }, { name: 'Metamagia', level: 3, desc: 'Altera tus hechizos.' }] },
-  'Mago': { hd: 6, saves: ['int', 'wis'], primary: 'int', spellcaster: true, subclasses: ['Abjuración', 'Evocación', 'Ilusión', 'Adivinación'], features: [{ name: 'Recuperación Arcana', level: 1, desc: 'Recuperas magia en descanso corto.', maxUses: 1, recover: 'Largo' }, { name: 'Erudito', level: 2, desc: 'Experto en una habilidad intelectual.' }] },
-  'Monje': { hd: 8, saves: ['str', 'dex'], primary: 'dex', spellcaster: false, subclasses: ['Mano Abierta', 'Sombras', 'Elementos'], features: [{ name: 'Artes Marciales', level: 1, desc: 'Ataques desarmados 1d6.', maxUses: '-', recover: '-' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + SAB.', maxUses: '-', recover: '-' }] },
-  'Paladín': { hd: 10, saves: ['wis', 'cha'], primary: 'str', spellcaster: true, subclasses: ['Devoción', 'Venganza', 'Ancianos', 'Gloria'], features: [{ name: 'Imposición Manos', level: 1, desc: 'Curas tocando.', maxUses: 'Infinita', recover: 'Largo' }, { name: 'Castigo Divino', level: 2, desc: 'Daño radiante extra.', maxUses: '-', recover: '-' }] },
-  'Pícaro': { hd: 8, saves: ['dex', 'int'], primary: 'dex', spellcaster: false, subclasses: ['Asesino', 'Ladrón', 'Embaucador'], features: [{ name: 'Ataque Furtivo', level: 1, desc: 'Daño extra con ventaja.', maxUses: '-', recover: '-' }, { name: 'Acción Astuta', level: 2, desc: 'Correr/Retirarse como adicional.', maxUses: '-', recover: '-' }] }
-};
-
-const BACKGROUNDS_2024 = {
-  'Acólito': { asis: ['int', 'wis', 'cha'], skills: ['insight', 'religion'], feat: 'Iniciado Mágico', featDesc: 'Eliges 2 trucos y 1 conjuro de nivel 1 de Clérigo.' },
-  'Animador': { asis: ['str', 'dex', 'cha'], skills: ['acrobatics', 'performance'], feat: 'Músico', featDesc: 'Tras un descanso, otorgas Inspiración Heroica a aliados.' },
-  'Artesano': { asis: ['str', 'dex', 'int'], skills: ['investigation', 'persuasion'], feat: 'Artesano', featDesc: 'Creas objetos un 20% más rápido y barato.' },
-  'Charlatán': { asis: ['dex', 'con', 'cha'], skills: ['deception', 'sleightOfHand'], feat: 'Habilidoso', featDesc: 'Ganas competencia en 3 habilidades extra a tu elección.' },
-  'Criminal': { asis: ['dex', 'con', 'int'], skills: ['stealth', 'deception'], feat: 'Alerta', featDesc: '+Bono Competencia a Iniciativa.' },
-  'Ermitaño': { asis: ['con', 'wis', 'cha'], skills: ['medicine', 'religion'], feat: 'Curandero', featDesc: 'Kits de sanador curan 1d8 extra.' },
-  'Erudito': { asis: ['con', 'int', 'wis'], skills: ['arcana', 'history'], feat: 'Iniciado Mágico', featDesc: '2 trucos y 1 conjuro nvl 1 de Mago.' },
-  'Escriba': { asis: ['dex', 'int', 'wis'], skills: ['investigation', 'perception'], feat: 'Habilidoso', featDesc: '3 habilidades extra.' },
-  'Granjero': { asis: ['str', 'con', 'wis'], skills: ['animalHandling', 'nature'], feat: 'Duro', featDesc: '+2 HP por nivel.' },
-  'Guardia': { asis: ['str', 'int', 'wis'], skills: ['athletics', 'perception'], feat: 'Alerta', featDesc: 'Intercambia iniciativa con aliados.' },
-  'Guía': { asis: ['dex', 'con', 'wis'], skills: ['stealth', 'survival'], feat: 'Iniciado Mágico', featDesc: '2 trucos y 1 conjuro nvl 1 de Druida.' },
-  'Marinero': { asis: ['str', 'dex', 'wis'], skills: ['acrobatics', 'perception'], feat: 'Peleador Taberna', featDesc: 'Desarmado 1d4, empujas al golpear desarmado.' },
-  'Mercader': { asis: ['con', 'int', 'cha'], skills: ['persuasion', 'animalHandling'], feat: 'Afortunado', featDesc: 'Puntos para repetir d20.' },
-  'Noble': { asis: ['str', 'int', 'cha'], skills: ['history', 'persuasion'], feat: 'Habilidoso', featDesc: '3 habilidades extra.' },
-  'Soldado': { asis: ['str', 'dex', 'con'], skills: ['athletics', 'intimidation'], feat: 'Atacante Salvaje', featDesc: 'Tira el daño melee dos veces y usa el mayor.' },
-  'Viajero': { asis: ['dex', 'wis', 'cha'], skills: ['survival', 'insight'], feat: 'Afortunado', featDesc: 'Repites los 1s en d20.' }
-};
-
-const SPECIES_2024 = {
-  'Humano': { speed: 30, traits: [{name: 'Versátil', desc: 'Ganas un dote extra.'}] },
-  'Elfo': { speed: 30, traits: [{name: 'Trance', desc: 'Duermes solo 4 horas.'}] },
-  'Enano': { speed: 30, traits: [{name: 'Resistencia', desc: 'Resistencia veneno.'}] },
-  'Tiefling': { speed: 30, traits: [{name: 'Legado', desc: 'Resistencia fuego.'}] },
-  'Mediano': { speed: 25, traits: [{name: 'Suerte', desc: 'Repites los 1s.'}] },
-  'Dracónido': { speed: 30, traits: [{name: 'Aliento', desc: 'Daño elemental.'}] },
-  'Gnomo': { speed: 30, traits: [{name: 'Astucia', desc: 'Ventaja salv. mentales.'}] },
-  'Goliath': { speed: 35, traits: [{name: 'Poderío', desc: 'Gigante.'}] },
-  'Orco': { speed: 30, traits: [{name: 'Adrenalina', desc: 'Dash adicional.'}] },
-  'Aasimar': { speed: 30, traits: [{name: 'Celestial', desc: 'Curas.'}] }
-};
-
-const ITEM_COMPENDIUM = {
-  weapons: [
-    { id: 'w_bas', name: 'Bastón', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1 },
-    { id: 'w_dag', name: 'Daga', type: 'simple', damage: '1d4', dmgType: 'perforante', prop: 'finesse', hands: 1 },
-    { id: 'w_gar', name: 'Garrote', type: 'simple', damage: '1d4', dmgType: 'contundente', prop: 'str', hands: 1 },
-    { id: 'w_hch', name: 'Hacha de Mano', type: 'simple', damage: '1d6', dmgType: 'cortante', prop: 'str', hands: 1 },
-    { id: 'w_jab', name: 'Jabalina', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1 },
-    { id: 'w_lan', name: 'Lanza', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1 },
-    { id: 'w_maz', name: 'Maza', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1 },
-    { id: 'w_ac', name: 'Arco Corto', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'dex', hands: 2 },
-    { id: 'w_bal', name: 'Ballesta Ligera', type: 'simple', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2 },
-    { id: 'w_ala', name: 'Alabarda', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2 },
-    { id: 'w_cim', name: 'Cimitarra', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1 },
-    { id: 'w_ec', name: 'Espada Corta', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1 },
-    { id: 'w_el', name: 'Espada Larga', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1 },
-    { id: 'w_esp', name: 'Espadón', type: 'martial', damage: '2d6', dmgType: 'cortante', prop: 'str', hands: 2 },
-    { id: 'w_est', name: 'Estoque', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'finesse', hands: 1 },
-    { id: 'w_gha', name: 'Gran Hacha', type: 'martial', damage: '1d12', dmgType: 'cortante', prop: 'str', hands: 2 },
-    { id: 'w_guj', name: 'Guja', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2 },
-    { id: 'w_hba', name: 'Hacha de Batalla', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1 },
-    { id: 'w_lat', name: 'Látigo', type: 'martial', damage: '1d4', dmgType: 'cortante', prop: 'finesse', hands: 1 },
-    { id: 'w_mgu', name: 'Martillo de Guerra', type: 'martial', damage: '1d8', dmgType: 'contundente', prop: 'str', hands: 1 },
-    { id: 'w_mzo', name: 'Mazo', type: 'martial', damage: '2d6', dmgType: 'contundente', prop: 'str', hands: 2 },
-    { id: 'w_al', name: 'Arco Largo', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2 },
-  ],
-  armor: [
-    { id: 'a_c', name: 'Armadura de Cuero', type: 'light', ac: 11, maxDex: 99 },
-    { id: 'a_ct', name: 'Cuero Tachonado', type: 'light', ac: 12, maxDex: 99 },
-    { id: 'a_pi', name: 'Pieles', type: 'medium', ac: 12, maxDex: 2 },
-    { id: 'a_cm', name: 'Camisote de Mallas', type: 'medium', ac: 13, maxDex: 2 },
-    { id: 'a_esc', name: 'Cota de Escamas', type: 'medium', ac: 14, maxDex: 2 },
-    { id: 'a_co', name: 'Coraza', type: 'medium', ac: 14, maxDex: 2 },
-    { id: 'a_mp', name: 'Media Placas', type: 'medium', ac: 15, maxDex: 2 },
-    { id: 'a_can', name: 'Cota de Anillas', type: 'heavy', ac: 14, maxDex: 0 },
-    { id: 'a_cma', name: 'Cota de Malla', type: 'heavy', ac: 16, maxDex: 0 },
-    { id: 'a_pl', name: 'Placas', type: 'heavy', ac: 18, maxDex: 0 },
-  ],
-  shields: [{ id: 's_esc', name: 'Escudo', type: 'shield', acBonus: 2, hands: 1 }],
-  magic: [{ id: 'm_an1', name: 'Anillo de Protección', type: 'ring', desc: '+1 CA' }, { id: 'm_bo1', name: 'Botas Élficas', type: 'boots', desc: 'Ventaja Sigilo' }]
-};
-
-// --- UTILIDADES GLOBALES ---
-function getMod(score) {
-  return Math.floor((score - 10) / 2);
-}
-function formatMod(mod) {
-  return mod >= 0 ? `+${mod}` : `${mod}`;
-}
-
-const INITIAL_STATE = {
-  activeTab: 'Constructor',
-  header: { name: 'Héroe', race: 'Humano', background: 'Soldado' },
-  classes: [{ id: '1', name: 'Guerrero', level: 1, hpRolls: [10], subclass: '' }],
-  baseStats: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
-  asi: { plus2: 'str', plus1: 'con' },
-  combat: { hpCurrent: 0, hpTemp: 0 },
-  equipment: { head: null, chest: ITEM_COMPENDIUM.armor[1], mainHand: ITEM_COMPENDIUM.weapons[12], offHand: ITEM_COMPENDIUM.shields[0], ring1: null },
-  spells: [], usedResources: {}, manualSaves: [], manualSkills: [], customResistances: ''
-};
-
-// ==========================================
-// 2. COMPONENTE PRINCIPAL APP
-// ==========================================
-
-export default function App() {
-  const [data, setData] = useState(INITIAL_STATE);
-  const [apiSpells, setApiSpells] = useState([]);
-  const [isLoadingSpells, setIsLoadingSpells] = useState(false);
-  const [dndDatabase, setDndDatabase] = useState(null);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Creador de Personajes D&D 2024</title>
   
-  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
-  const [lvlUpSelectedClass, setLvlUpSelectedClass] = useState('Guerrero');
-  const [lvlUpHpMethod, setLvlUpHpMethod] = useState('average');
-  const [lvlUpHpRoll, setLvlUpHpRoll] = useState(null);
-  const [lvlUpSubclass, setLvlUpSubclass] = useState('');
-
-  // --- CÁLCULOS CENTRALIZADOS ---
-  const primaryClass = data.classes[0].name;
-  const primaryClassData = CLASSES_2024[primaryClass] || CLASSES_2024['Guerrero'];
-  const totalLevel = data.classes.reduce((sum, c) => sum + c.level, 0);
-  const profBonus = Math.ceil(totalLevel / 4) + 1;
-  const bgData = BACKGROUNDS_2024[data.header.background] || BACKGROUNDS_2024['Soldado'];
-
-  const stats = { ...data.baseStats };
-  if (data.asi.plus2) stats[data.asi.plus2] += 2;
-  if (data.asi.plus1) stats[data.asi.plus1] += 1;
+  <!-- Tailwind CSS para los estilos -->
+  <script src="https://cdn.tailwindcss.com"></script>
   
-  const mods = {
-    str: getMod(stats.str), dex: getMod(stats.dex), con: getMod(stats.con),
-    int: getMod(stats.int), wis: getMod(stats.wis), cha: getMod(stats.cha)
-  };
-
-  const totalBaseHp = data.classes.reduce((sum, c) => sum + (c.hpRolls ? c.hpRolls.reduce((a, b) => a + b, 0) : 0), 0);
-  const isTough = data.header.background === 'Granjero';
-  const hpMax = totalBaseHp + (totalLevel * mods.con) + (isTough ? totalLevel * 2 : 0);
-
-  // CA Dinámica
-  let ac = 10 + mods.dex;
-  const isMonk = data.classes.some(c => c.name === 'Monje');
-  const isBarb = data.classes.some(c => c.name === 'Bárbaro');
-
-  if (data.equipment.chest) {
-    const armor = data.equipment.chest;
-    if (armor.type === 'heavy') ac = armor.ac; 
-    else ac = armor.ac + Math.min(armor.maxDex !== undefined ? armor.maxDex : 99, mods.dex);
-  } else {
-    if (isMonk && !data.equipment.offHand && !data.equipment.chest) ac = 10 + mods.dex + mods.wis;
-    else if (isBarb && !data.equipment.chest) ac = 10 + mods.dex + mods.con;
-  }
-  if (data.equipment.offHand?.type === 'shield') ac += data.equipment.offHand.acBonus;
-  if (data.equipment.ring1?.id === 'm_an1') ac += 1;
-
-  const isSpellcaster = data.classes.some(c => CLASSES_2024[c.name].spellcaster);
-  const spellDC = 8 + profBonus + mods[primaryClassData.primary];
-  const spellAttack = profBonus + mods[primaryClassData.primary];
+  <!-- FontAwesome para los iconos (Alternativa robusta para HTML independiente) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  let casterLevel = 0;
-  let totalCantrips = 0;
-  let maxSpellsAllowed = 0;
-  let maxSpellLevelGlobal = 0;
+  <!-- React y ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel para compilar JSX en el navegador -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-stone-50 text-stone-900 font-sans antialiased">
+  <!-- Aquí es donde React inyectará la aplicación -->
+  <div id="root"></div>
 
-  data.classes.forEach(c => {
-    const clsInfo = CLASSES_2024[c.name];
-    if (clsInfo && clsInfo.spellcaster) {
-      if (['Mago', 'Clérigo', 'Bardo', 'Druida', 'Hechicero'].includes(c.name)) {
-        casterLevel += c.level;
-        totalCantrips += (c.name === 'Mago' || c.name === 'Clérigo') ? (c.level >= 4 ? 4 : 3) : (c.level >= 4 ? 3 : 2);
-        maxSpellsAllowed += Math.min(22, c.level + 3);
-        maxSpellLevelGlobal = Math.max(maxSpellLevelGlobal, Math.min(9, Math.ceil(c.level / 2)));
-      } else if (['Explorador', 'Paladín'].includes(c.name)) {
-        casterLevel += Math.ceil(c.level / 2); 
-        totalCantrips += 2; 
-        maxSpellsAllowed += Math.max(2, Math.floor(c.level / 2) + 1);
-        maxSpellLevelGlobal = Math.max(maxSpellLevelGlobal, Math.min(5, Math.ceil(c.level / 4))); 
-      } else if (c.name === 'Brujo') {
-        casterLevel += c.level; 
-        totalCantrips += c.level >= 4 ? 3 : 2;
-        maxSpellsAllowed += Math.min(15, c.level + 2);
-        maxSpellLevelGlobal = Math.max(maxSpellLevelGlobal, Math.min(5, Math.ceil(c.level / 2))); 
-      }
-    }
-  });
+  <!-- Nuestro código de React -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  const spellLimits = { maxCantrips: totalCantrips, maxSpells: maxSpellsAllowed, maxSpellLevel: maxSpellLevelGlobal };
+    // --- SISTEMA DE ICONOS (FontAwesome) ---
+    // Usamos esto para evitar errores de librerías externas complejas en GitHub Pages
+    const createIcon = (iconClass) => ({ size = 24, className = "" }) => (
+      <i className={`fa-solid ${iconClass} ${className}`} style={{ fontSize: size, width: size, height: size, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>
+    );
 
-  function getSlotsForLevel(lvl) {
-    if (lvl === 0) return 'Infinita';
-    if (casterLevel === 0) return 0; 
-    const slots = [
-      [0,0,0,0,0,0,0,0,0], [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], 
-      [4,3,0,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], 
-      [4,3,3,2,0,0,0,0,0], [4,3,3,3,1,0,0,0,0], [4,3,3,3,2,0,0,0,0], [4,3,3,3,2,1,0,0,0], 
-      [4,3,3,3,2,1,0,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,1,0], 
-      [4,3,3,3,2,1,1,1,0], [4,3,3,3,2,1,1,1,1], [4,3,3,3,3,1,1,1,1], [4,3,3,3,3,2,1,1,1], 
-      [4,3,3,3,3,2,2,1,1] 
+    const Shield = createIcon('fa-shield-halved');
+    const FileText = createIcon('fa-file-lines');
+    const User = createIcon('fa-user');
+    const Sparkles = createIcon('fa-wand-magic-sparkles');
+    const Sword = createIcon('fa-khanda');
+    const Heart = createIcon('fa-heart');
+    const Wrench = createIcon('fa-wrench');
+    const Dices = createIcon('fa-dice-d20');
+    const Backpack = createIcon('fa-briefcase');
+    const BookOpen = createIcon('fa-book-open');
+    const Fingerprint = createIcon('fa-fingerprint');
+    const Shirt = createIcon('fa-shirt');
+    const Loader2 = createIcon('fa-spinner fa-spin');
+    const Info = createIcon('fa-circle-info');
+    const Plus = createIcon('fa-plus');
+    const X = createIcon('fa-xmark');
+    const TrendingUp = createIcon('fa-arrow-trend-up');
+    const Eye = createIcon('fa-eye');
+
+    // ==========================================
+    // 1. CONSTANTES Y BASES DE DATOS (ESTÁTICAS)
+    // ==========================================
+
+    const ATTRS = [
+      { key: 'str', name: 'Fuerza', short: 'FUE' },
+      { key: 'dex', name: 'Destreza', short: 'DES' },
+      { key: 'con', name: 'Constitución', short: 'CON' },
+      { key: 'int', name: 'Inteligencia', short: 'INT' },
+      { key: 'wis', name: 'Sabiduría', short: 'SAB' },
+      { key: 'cha', name: 'Carisma', short: 'CAR' }
     ];
-    return slots[Math.min(20, casterLevel)][lvl - 1] || 0;
-  }
 
-  const activeFeatures = [];
-  data.classes.forEach(c => {
-    const clsInfo = CLASSES_2024[c.name];
-    if (clsInfo && clsInfo.features) {
-      clsInfo.features.forEach(feat => { if (c.level >= feat.level) activeFeatures.push({ ...feat, originClass: c.name }); });
-      if (c.level >= 3 && c.subclass) activeFeatures.push({ name: c.subclass, level: 3, originClass: c.name, desc: "Especialización de subclase activa.", maxUses: '-', recover: '-' });
-    }
-  });
+    const SKILLS_LIST = [
+      { key: 'acrobatics', name: 'Acrobacias', attr: 'dex' },
+      { key: 'animalHandling', name: 'Trato Animales', attr: 'wis' },
+      { key: 'arcana', name: 'C. Arcano', attr: 'int' },
+      { key: 'athletics', name: 'Atletismo', attr: 'str' },
+      { key: 'deception', name: 'Engaño', attr: 'cha' },
+      { key: 'history', name: 'Historia', attr: 'int' },
+      { key: 'insight', name: 'Perspicacia', attr: 'wis' },
+      { key: 'intimidation', name: 'Intimidación', attr: 'cha' },
+      { key: 'investigation', name: 'Investigación', attr: 'int' },
+      { key: 'medicine', name: 'Medicina', attr: 'wis' },
+      { key: 'nature', name: 'Naturaleza', attr: 'int' },
+      { key: 'perception', name: 'Percepción', attr: 'wis' },
+      { key: 'performance', name: 'Interpretación', attr: 'cha' },
+      { key: 'persuasion', name: 'Persuasión', attr: 'cha' },
+      { key: 'religion', name: 'Religión', attr: 'int' },
+      { key: 'sleightOfHand', name: 'Juego de Manos', attr: 'dex' },
+      { key: 'stealth', name: 'Sigilo', attr: 'dex' },
+      { key: 'survival', name: 'Supervivencia', attr: 'wis' }
+    ];
 
-  const autoResistances = [];
-  if (data.header.race === 'Enano') autoResistances.push('Veneno');
-  if (data.header.race === 'Tiefling') autoResistances.push('Fuego');
-  if (isBarb) autoResistances.push('Físico (Sólo en Furia)');
-
-  // --- HANDLERS ---
-  const updateHeader = (f, v) => setData(prev => ({ ...prev, header: { ...prev.header, [f]: v } }));
-  const updateBaseStat = (s, v) => setData(prev => ({ ...prev, baseStats: { ...prev.baseStats, [s]: Number(v) } }));
-  
-  const handlePrimaryClassChange = (v) => {
-    setData(prev => {
-      const nc = [...prev.classes]; nc[0].name = v; 
-      nc[0].hpRolls = [CLASSES_2024[v].hd]; 
-      nc[0].subclass = '';
-      const startEquip = v === 'Mago' ? ITEM_COMPENDIUM.weapons.find(w=>w.id==='w_bas') : ITEM_COMPENDIUM.weapons[0];
-      return { ...prev, classes: nc, spells: [], equipment: { ...prev.equipment, mainHand: startEquip } };
-    });
-  };
-
-  const handleBackgroundChange = (e) => {
-    const b = e.target.value; const bd = BACKGROUNDS_2024[b];
-    setData(prev => ({ ...prev, header: { ...prev.header, background: b }, asi: { plus2: bd.asis[0], plus1: bd.asis[1] } }));
-  };
-
-  const handleRollDice = () => {
-    const r = () => { const rolls = Array.from({length:4},()=>Math.floor(Math.random()*6)+1).sort((a,b)=>b-a); return rolls[0]+rolls[1]+rolls[2]; };
-    setData(prev => ({ ...prev, baseStats: { str:r(), dex:r(), con:r(), int:r(), wis:r(), cha:r() } }));
-  };
-
-  const handleDistribute = () => {
-    const vals = Object.values(data.baseStats).sort((a,b)=>b-a);
-    const prio = CLASS_PRIORITIES[primaryClass] || CLASS_PRIORITIES['Guerrero'];
-    const ns = {}; prio.forEach((a, i) => { ns[a] = vals[i]; });
-    setData(prev => ({ ...prev, baseStats: ns }));
-  };
-
-  const equipItem = (slot, item) => {
-    setData(prev => {
-      const newEq = { ...prev.equipment, [slot]: item };
-      if (item?.hands === 2 && slot === 'mainHand') newEq.offHand = null;
-      if (item?.type === 'shield' && newEq.mainHand?.hands === 2) newEq.mainHand = null;
-      return { ...prev, equipment: newEq };
-    });
-  };
-
-  const toggleSkill = (key) => setData(prev => ({ ...prev, manualSkills: prev.manualSkills.includes(key) ? prev.manualSkills.filter(k => k !== key) : [...prev.manualSkills, key] }));
-  const toggleSave = (key) => setData(prev => ({ ...prev, manualSaves: prev.manualSaves.includes(key) ? prev.manualSaves.filter(k => k !== key) : [...prev.manualSaves, key] }));
-  
-  const useResource = (k, m) => {
-    const c = data.usedResources[k] || 0;
-    if (m === 'Infinita' || c < m) setData(prev => ({ ...prev, usedResources: { ...prev.usedResources, [k]: c + 1 } }));
-  };
-
-  const toggleSpell = (s) => {
-    setData(prev => {
-      const isPrepared = prev.spells.includes(s.id);
-      if (isPrepared) return { ...prev, spells: prev.spells.filter(id => id !== s.id) };
-      
-      const preparedCantrips = prev.spells.filter(id => apiSpells.find(sp => sp.id === id)?.level === 0).length;
-      const preparedSpellsCount = prev.spells.filter(id => apiSpells.find(sp => sp.id === id)?.level > 0).length;
-      if (s.level === 0 && preparedCantrips >= spellLimits.maxCantrips) return prev;
-      if (s.level > 0 && preparedSpellsCount >= spellLimits.maxSpells) return prev;
-      
-      return { ...prev, spells: [...prev.spells, s.id] };
-    });
-  };
-
-  const handleRemoveClass = (index) => {
-    setData(prev => {
-      const nc = [...prev.classes];
-      nc.splice(index, 1);
-      return { ...prev, classes: nc };
-    });
-  };
-
-  const openLevelUpWizard = () => {
-    setLvlUpSelectedClass(data.classes[0].name);
-    setLvlUpHpMethod('average');
-    setLvlUpHpRoll(null);
-    setLvlUpSubclass('');
-    setShowLevelUpModal(true);
-  };
-
-  const handleRollHp = () => {
-    const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
-    setLvlUpHpRoll(Math.floor(Math.random() * hd) + 1);
-    setLvlUpHpMethod('roll');
-  };
-
-  const confirmLevelUp = () => {
-    setData(prev => {
-      const nc = [...prev.classes]; const idx = nc.findIndex(c => c.name === lvlUpSelectedClass);
-      const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
-      const gain = lvlUpHpMethod === 'average' ? (Math.ceil(hd/2)+1) : (lvlUpHpRoll || 1);
-      if (idx >= 0) {
-        nc[idx].level += 1; nc[idx].hpRolls.push(gain);
-        if (nc[idx].level === 3) nc[idx].subclass = lvlUpSubclass;
-      } else {
-        nc.push({ id: Date.now().toString(), name: lvlUpSelectedClass, level: 1, hpRolls: [gain], subclass: '' });
-      }
-      return { ...prev, classes: nc };
-    });
-    setShowLevelUpModal(false);
-  };
-
-  // --- FETCH API DE HECHIZOS Y BASE DE DATOS DND JSON ---
-  useEffect(() => {
-    // Intentar cargar la base de datos externa (dnd_data.json)
-    fetch('./dnd_data.json')
-      .then(res => res.json())
-      .then(json => {
-         console.log("Base de datos D&D 2024 conectada.", json);
-         setDndDatabase(json);
-      })
-      .catch(err => {
-         console.log("Usando base de datos estática local (D&D 2024).", err);
-      });
-
-    if (!isSpellcaster) return;
-    setIsLoadingSpells(true);
-    const mapEn = { 'Mago': 'Wizard', 'Paladín': 'Paladin', 'Bardo': 'Bard', 'Brujo': 'Warlock', 'Clérigo': 'Cleric', 'Druida': 'Druid', 'Explorador': 'Ranger', 'Hechicero': 'Sorcerer' };
-    const classesEn = data.classes.filter(c => CLASSES_2024[c.name].spellcaster).map(c => mapEn[c.name]).filter(Boolean);
-    Promise.all(classesEn.map(en => fetch(`https://api.open5e.com/v1/spells/?dnd_class__icontains=${en}&limit=250`).then(res => res.json())))
-    .then(results => {
-      const all = []; const seen = new Set();
-      results.forEach(res => res.results.forEach(s => {
-        if (!seen.has(s.name)) {
-          seen.add(s.name);
-          all.push({ id: s.slug, level: s.level_int || 0, name: s.name, shortDesc: (s.desc || "").substring(0, 80) + '...', fullDesc: s.desc || "" });
-        }
-      }));
-      setApiSpells(all.sort((a,b) => a.level - b.level));
-    }).finally(() => setIsLoadingSpells(false));
-  }, [data.classes, isSpellcaster]);
-
-  useEffect(() => {
-    if (data.combat.hpCurrent === 0 && hpMax > 0) setData(prev => ({ ...prev, combat: { ...prev.combat, hpCurrent: hpMax } }));
-  }, [hpMax]);
-
-  // ==========================================
-  // 3. FUNCIONES DE RENDERIZADO (HOISTED)
-  // ==========================================
-
-  function renderActionCardUI(keyId, title, subtitle, fullDesc, currentUses, maxUses, onUse, onRecover, isSpell = false) {
-    const ex = maxUses !== 'Infinita' && maxUses !== '-' && currentUses >= maxUses;
-    return (
-      <div key={keyId} className={`border-2 rounded-xl p-3 md:p-4 transition-all flex flex-col justify-between ${ex ? 'bg-stone-100 border-stone-300 grayscale opacity-60' : 'bg-white border-red-200 shadow-sm'}`}>
-        <div>
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h4 className="font-bold text-sm text-stone-800">{title}</h4>
-              <span className={`text-[9px] font-bold uppercase ${isSpell ? 'text-blue-600' : 'text-amber-600'}`}>{subtitle}</span>
-            </div>
-            {maxUses !== 'Infinita' && maxUses !== '-' && (
-              <div className="flex gap-1">
-                {Array.from({ length: Number(maxUses) || 0 }).map((_, i) => (
-                  <div key={i} className={`w-2 h-2 rounded-full border ${i < currentUses ? 'bg-stone-300' : (isSpell ? 'bg-blue-500' : 'bg-red-500')}`} />
-                ))}
-              </div>
-            )}
-          </div>
-          <p className="text-[10px] text-stone-600 h-16 overflow-y-auto pr-1 text-justify scrollbar-thin">{fullDesc}</p>
-        </div>
-        {maxUses !== '-' && (
-          <div className="flex justify-between items-center border-t pt-2 mt-2">
-            <button disabled={ex} onClick={onUse} className="text-[9px] font-bold uppercase text-[#8B1515] hover:underline">Usar</button>
-            <button onClick={onRecover} className="text-[9px] font-bold uppercase text-stone-400 hover:text-stone-600">Rest.</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  function renderEquipmentSelector(slot, title, itemsToPick) {
-    return (
-      <div className="mb-3">
-        <label className="block text-[10px] font-bold uppercase text-stone-500 mb-1">{title}</label>
-        <select 
-          className="w-full border border-stone-300 rounded p-1.5 text-xs focus:outline-none focus:border-[#8B1515]"
-          value={data.equipment[slot] ? data.equipment[slot].id : ''}
-          onChange={(e) => equipItem(slot, itemsToPick.find(i => i.id === e.target.value) || null)}
-        >
-          <option value="">-- Vacío --</option>
-          {itemsToPick.map(item => (
-            <option key={item.id} value={item.id}>
-              {item.name} {item.damage ? `(${item.damage})` : ''} {item.ac ? `(CA ${item.ac})` : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
-  function renderLevelUpModalUI() {
-    if (!showLevelUpModal) return null;
-    const existing = data.classes.find(c => c.name === lvlUpSelectedClass);
-    const nextLvl = existing ? existing.level + 1 : 1;
-    const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
-    const feats = CLASSES_2024[lvlUpSelectedClass]?.features?.filter(f => f.level === nextLvl) || [];
-
-    return (
-      <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col">
-          <div className="bg-[#8B1515] p-4 text-white flex justify-between items-center">
-            <h2 className="font-bold flex items-center gap-2"><TrendingUp size={20}/> Subir Nivel</h2>
-            <button onClick={() => setShowLevelUpModal(false)}><X size={20}/></button>
-          </div>
-          <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
-            <div>
-              <p className="text-xs font-bold text-stone-500 mb-2 uppercase">SELECCIONA CLASE A MEJORAR:</p>
-              <select value={lvlUpSelectedClass} onChange={(e) => setLvlUpSelectedClass(e.target.value)} className="w-full border p-2 rounded">
-                <optgroup label="Tus Clases">
-                  {data.classes.map(c => <option key={`up-${c.name}`} value={c.name}>{c.name} (Subir a Nivel {c.level + 1})</option>)}
-                </optgroup>
-                <optgroup label="Multiclase (Nivel 1)">
-                  {Object.keys(CLASSES_2024).filter(cls => !data.classes.find(c => c.name === cls)).map(cls => <option key={`new-${cls}`} value={cls}>{cls}</option>)}
-                </optgroup>
-              </select>
-            </div>
-            
-            {nextLvl === 3 && (
-              <div className="bg-amber-50 p-3 rounded border border-amber-200 shadow-inner">
-                <p className="text-xs font-bold text-amber-800 mb-2 uppercase flex items-center gap-2"><Sparkles size={14}/> ¡Nivel 3! Elige tu Subclase:</p>
-                <select value={lvlUpSubclass} onChange={e => setLvlUpSubclass(e.target.value)} className="w-full border p-2 rounded text-sm font-bold text-amber-900">
-                  <option value="">-- Seleccionar Subclase --</option>
-                  {CLASSES_2024[lvlUpSelectedClass]?.subclasses.map(s => <option key={`sub-${s}`} value={s}>{s}</option>)}
-                </select>
-              </div>
-            )}
-
-            <div className="bg-stone-50 p-4 rounded border">
-              <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Aumento de Salud (1d{hd}):</p>
-              <div className="flex gap-4">
-                <button onClick={() => setLvlUpHpMethod('average')} className={`flex-1 p-2 border-2 rounded font-bold text-sm transition-colors ${lvlUpHpMethod==='average'?'border-green-500 bg-green-50 text-green-900':'border-stone-200 text-stone-500'}`}>Promedio (+{Math.ceil(hd/2)+1})</button>
-                <button onClick={handleRollHp} className={`flex-1 p-2 border-2 rounded font-bold text-sm transition-colors ${lvlUpHpMethod==='roll'?'border-amber-500 bg-amber-50 text-amber-900':'border-stone-200 text-stone-500'}`}>{lvlUpHpRoll ? `Resultado: ${lvlUpHpRoll}` : 'Tirar el Dado'}</button>
-              </div>
-            </div>
-
-            {feats.length > 0 && (
-              <div>
-                <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Rasgos Desbloqueados:</p>
-                {feats.map(f => <div key={`feat-${f.name}`} className="text-sm border-l-4 border-[#8B1515] bg-stone-50 pl-3 py-2 mb-2 rounded-r"><strong>{f.name}:</strong> {f.desc}</div>)}
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t flex justify-end gap-2"><button onClick={confirmLevelUp} disabled={nextLvl === 3 && !lvlUpSubclass} className="px-6 py-2 bg-green-600 text-white rounded font-bold shadow disabled:opacity-50">Confirmar</button></div>
-        </div>
-      </div>
-    );
-  }
-
-  function renderConstructorUI() {
-    const getAttrName = (key) => ATTRS.find(a => a.key === key)?.name || key;
-
-    const CLASS_ICONS = {
-      'Bárbaro': <Sword size={18} />,
-      'Bardo': <Heart size={18} />,
-      'Brujo': <Eye size={18} />,
-      'Clérigo': <Shield size={18} />,
-      'Druida': <Sparkles size={18} />,
-      'Explorador': <Eye size={18} />,
-      'Guerrero': <Sword size={18} />,
-      'Hechicero': <Sparkles size={18} />,
-      'Mago': <BookOpen size={18} />,
-      'Monje': <User size={18} />,
-      'Paladín': <Shield size={18} />,
-      'Pícaro': <Fingerprint size={18} />
+    const CLASS_PRIORITIES = {
+      'Bárbaro': ['str', 'con', 'dex', 'wis', 'int', 'cha'],
+      'Bardo': ['cha', 'dex', 'con', 'wis', 'int', 'str'],
+      'Brujo': ['cha', 'con', 'dex', 'wis', 'int', 'str'],
+      'Clérigo': ['wis', 'con', 'str', 'dex', 'int', 'cha'],
+      'Druida': ['wis', 'con', 'dex', 'int', 'cha', 'str'],
+      'Explorador': ['dex', 'wis', 'con', 'str', 'int', 'cha'],
+      'Guerrero': ['str', 'con', 'dex', 'wis', 'int', 'cha'],
+      'Hechicero': ['cha', 'con', 'dex', 'wis', 'int', 'str'],
+      'Mago': ['int', 'con', 'dex', 'wis', 'cha', 'str'],
+      'Monje': ['dex', 'wis', 'con', 'str', 'int', 'cha'],
+      'Paladín': ['str', 'cha', 'con', 'wis', 'dex', 'int'],
+      'Pícaro': ['dex', 'con', 'int', 'wis', 'cha', 'str']
     };
 
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8 space-y-8 animate-in fade-in">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h2 className="text-2xl font-black text-stone-800 tracking-tight uppercase">Constructor de Personaje</h2>
-          <button onClick={openLevelUpWizard} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-            <TrendingUp size={16}/> Nivel Total: {totalLevel} (Subir Nivel)
-          </button>
-        </div>
+    const CLASSES_2024 = {
+      'Bárbaro': { hd: 12, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: ['Berserker', 'Árbol del Mundo', 'Tótem', 'Zelote'], features: [{ name: 'Furia', level: 1, desc: 'Ventaja en Fuerza, daño extra y resistencia física.', maxUses: 2, recover: 'Largo' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + CON (sin armadura).', maxUses: '-', recover: '-' }, { name: 'Ataque Extra', level: 5, desc: 'Dos ataques por acción.', maxUses: '-', recover: '-' }] },
+      'Bardo': { hd: 8, saves: ['dex', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Conocimiento', 'Valor', 'Glamour', 'Danza'], features: [{ name: 'Inspiración Bárdica', level: 1, desc: 'Dado extra (1d6) a un aliado.', maxUses: 3, recover: 'Largo' }, { name: 'Aprendiz de Todo', level: 2, desc: '+1/2 Proficiencia a pruebas sin ella.' }] },
+      'Brujo': { hd: 8, saves: ['wis', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Archihada', 'Celestial', 'Infernal', 'Gran Antiguo'], features: [{ name: 'Magia de Pacto', level: 1, desc: 'Espacios se recuperan con descanso corto.', maxUses: '-', recover: '-' }, { name: 'Invocaciones', level: 1, desc: 'Talentos mágicos permanentes.' }] },
+      'Clérigo': { hd: 8, saves: ['wis', 'cha'], primary: 'wis', spellcaster: true, subclasses: ['Vida', 'Luz', 'Guerra', 'Engaño'], features: [{ name: 'Canalizar Divinidad', level: 2, desc: 'Efectos divinos únicos.', maxUses: 1, recover: 'Corto' }] },
+      'Druida': { hd: 8, saves: ['int', 'wis'], primary: 'wis', spellcaster: true, subclasses: ['Luna', 'Tierra', 'Estrellas', 'Mar'], features: [{ name: 'Forma Salvaje', level: 2, desc: 'Te transformas en bestia.', maxUses: 2, recover: 'Corto' }] },
+      'Explorador': { hd: 10, saves: ['str', 'dex'], primary: 'wis', spellcaster: true, subclasses: ['Cazador', 'Señor Bestias', 'Gloom Stalker', 'Caminante Feérico'], features: [{ name: 'Marca del Cazador', level: 1, desc: 'Daño extra gratis.', maxUses: 2, recover: 'Largo' }] },
+      'Guerrero': { hd: 10, saves: ['str', 'con'], primary: 'str', spellcaster: false, subclasses: ['Campeón', 'Maestro Batalla', 'Caballero Arcano'], features: [{ name: 'Nuevos Bríos', level: 1, desc: 'Curas 1d10+nivel.', maxUses: 1, recover: 'Corto' }, { name: 'Oleada de Acción', level: 2, desc: 'Acción extra.', maxUses: 1, recover: 'Corto' }] },
+      'Hechicero': { hd: 6, saves: ['con', 'cha'], primary: 'cha', spellcaster: true, subclasses: ['Dracónico', 'Salvaje', 'Aberrante'], features: [{ name: 'Magia Innata', level: 1, desc: 'Ventaja en ataques de conjuro.', maxUses: 2, recover: 'Largo' }, { name: 'Metamagia', level: 3, desc: 'Altera tus hechizos.' }] },
+      'Mago': { hd: 6, saves: ['int', 'wis'], primary: 'int', spellcaster: true, subclasses: ['Abjuración', 'Evocación', 'Ilusión', 'Adivinación'], features: [{ name: 'Recuperación Arcana', level: 1, desc: 'Recuperas magia en descanso corto.', maxUses: 1, recover: 'Largo' }, { name: 'Erudito', level: 2, desc: 'Experto en una habilidad intelectual.' }] },
+      'Monje': { hd: 8, saves: ['str', 'dex'], primary: 'dex', spellcaster: false, subclasses: ['Mano Abierta', 'Sombras', 'Elementos'], features: [{ name: 'Artes Marciales', level: 1, desc: 'Ataques desarmados 1d6.', maxUses: '-', recover: '-' }, { name: 'Defensa sin Armadura', level: 1, desc: 'CA = 10 + DES + SAB.', maxUses: '-', recover: '-' }] },
+      'Paladín': { hd: 10, saves: ['wis', 'cha'], primary: 'str', spellcaster: true, subclasses: ['Devoción', 'Venganza', 'Ancianos', 'Gloria'], features: [{ name: 'Imposición Manos', level: 1, desc: 'Curas tocando.', maxUses: 'Infinita', recover: 'Largo' }, { name: 'Castigo Divino', level: 2, desc: 'Daño radiante extra.', maxUses: '-', recover: '-' }] },
+      'Pícaro': { hd: 8, saves: ['dex', 'int'], primary: 'dex', spellcaster: false, subclasses: ['Asesino', 'Ladrón', 'Embaucador'], features: [{ name: 'Ataque Furtivo', level: 1, desc: 'Daño extra con ventaja.', maxUses: '-', recover: '-' }, { name: 'Acción Astuta', level: 2, desc: 'Correr/Retirarse como adicional.', maxUses: '-', recover: '-' }] }
+    };
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-             <h3 className="font-bold text-stone-800 border-b pb-1 uppercase text-xs tracking-wider">Identidad y Origen</h3>
-             <div className="grid grid-cols-1 gap-4">
-               <input type="text" value={data.header.name} onChange={e => updateHeader('name', e.target.value)} className="w-full border border-stone-300 p-2 rounded font-bold focus:border-[#8B1515] focus:outline-none" placeholder="Nombre del Héroe" />
-               <div className="grid grid-cols-2 gap-4">
-                 <div>
-                   <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Especie</label>
-                   <select value={data.header.race} onChange={e => updateHeader('race', e.target.value)} className="w-full border border-stone-300 p-2 rounded text-sm focus:outline-none">
-                     {Object.keys(SPECIES_2024).map(s => <option key={s} value={s}>{s}</option>)}
-                   </select>
-                 </div>
-                 <div>
-                   <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Trasfondo</label>
-                   <select value={data.header.background} onChange={handleBackgroundChange} className="w-full border border-stone-300 p-2 rounded text-sm focus:outline-none">
-                     {Object.keys(BACKGROUNDS_2024).map(b => {
-                       const bd = BACKGROUNDS_2024[b];
-                       const sText = bd.asis.map(a => ATTRS.find(at => at.key === a)?.short).join('/');
-                       return <option key={b} value={b}>{b} (+{sText})</option>;
-                     })}
-                   </select>
-                 </div>
-               </div>
-             </div>
-          </div>
+    const BACKGROUNDS_2024 = {
+      'Acólito': { asis: ['int', 'wis', 'cha'], skills: ['insight', 'religion'], feat: 'Iniciado Mágico', featDesc: 'Eliges 2 trucos y 1 conjuro de nivel 1 de Clérigo.' },
+      'Animador': { asis: ['str', 'dex', 'cha'], skills: ['acrobatics', 'performance'], feat: 'Músico', featDesc: 'Tras un descanso, otorgas Inspiración Heroica a aliados.' },
+      'Artesano': { asis: ['str', 'dex', 'int'], skills: ['investigation', 'persuasion'], feat: 'Artesano', featDesc: 'Creas objetos un 20% más rápido y barato.' },
+      'Charlatán': { asis: ['dex', 'con', 'cha'], skills: ['deception', 'sleightOfHand'], feat: 'Habilidoso', featDesc: 'Ganas competencia en 3 habilidades extra a tu elección.' },
+      'Criminal': { asis: ['dex', 'con', 'int'], skills: ['stealth', 'deception'], feat: 'Alerta', featDesc: '+Bono Competencia a Iniciativa.' },
+      'Ermitaño': { asis: ['con', 'wis', 'cha'], skills: ['medicine', 'religion'], feat: 'Curandero', featDesc: 'Kits de sanador curan 1d8 extra.' },
+      'Erudito': { asis: ['con', 'int', 'wis'], skills: ['arcana', 'history'], feat: 'Iniciado Mágico', featDesc: '2 trucos y 1 conjuro nvl 1 de Mago.' },
+      'Escriba': { asis: ['dex', 'int', 'wis'], skills: ['investigation', 'perception'], feat: 'Habilidoso', featDesc: '3 habilidades extra.' },
+      'Granjero': { asis: ['str', 'con', 'wis'], skills: ['animalHandling', 'nature'], feat: 'Duro', featDesc: '+2 HP por nivel.' },
+      'Guardia': { asis: ['str', 'int', 'wis'], skills: ['athletics', 'perception'], feat: 'Alerta', featDesc: 'Intercambia iniciativa con aliados.' },
+      'Guía': { asis: ['dex', 'con', 'wis'], skills: ['stealth', 'survival'], feat: 'Iniciado Mágico', featDesc: '2 trucos y 1 conjuro nvl 1 de Druida.' },
+      'Marinero': { asis: ['str', 'dex', 'wis'], skills: ['acrobatics', 'perception'], feat: 'Peleador Taberna', featDesc: 'Desarmado 1d4, empujas al golpear desarmado.' },
+      'Mercader': { asis: ['con', 'int', 'cha'], skills: ['persuasion', 'animalHandling'], feat: 'Afortunado', featDesc: 'Puntos para repetir d20.' },
+      'Noble': { asis: ['str', 'int', 'cha'], skills: ['history', 'persuasion'], feat: 'Habilidoso', featDesc: '3 habilidades extra.' },
+      'Soldado': { asis: ['str', 'dex', 'con'], skills: ['athletics', 'intimidation'], feat: 'Atacante Salvaje', featDesc: 'Tira el daño melee dos veces y usa el mayor.' },
+      'Viajero': { asis: ['dex', 'wis', 'cha'], skills: ['survival', 'insight'], feat: 'Afortunado', featDesc: 'Repites los 1s en d20.' }
+    };
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-end border-b pb-1">
-              <h3 className="font-bold text-stone-800 uppercase text-xs tracking-wider">Atributos Base</h3>
-              <div className="flex gap-2">
-                <button onClick={handleRollDice} className="flex items-center gap-1 bg-stone-200 text-stone-700 px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-stone-300 transition-colors" title="Tira 4d6 y descarta el menor">
-                  <Dices size={14}/> Tirar
-                </button>
-                <button onClick={handleDistribute} className="flex items-center gap-1 bg-[#8B1515] text-white px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-[#701010] transition-colors" title="Auto-asignar">
-                  <Sparkles size={14}/> Auto-Asignar
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-               {ATTRS.map(a => {
-                 const totalBonus = (data.asi.plus2 === a.key ? 2 : 0) + (data.asi.plus1 === a.key ? 1 : 0);
-                 return (
-                   <div key={a.key} className="text-center relative flex flex-col">
-                     <label className="text-[10px] font-bold text-stone-400 uppercase mb-1 flex items-center justify-between">
-                       {a.name}
-                       {totalBonus > 0 && <span className="text-[9px] bg-green-100 text-green-700 px-1 rounded">+{totalBonus}</span>}
-                     </label>
-                     <input type="number" value={data.baseStats[a.key]} onChange={e => updateBaseStat(a.key, e.target.value)} className={`w-full border p-2 rounded text-center font-bold text-lg focus:outline-none ${totalBonus > 0 ? 'border-green-400 bg-green-50' : 'border-stone-300 focus:border-[#8B1515]'}`} />
-                   </div>
-                 );
-               })}
-            </div>
-          </div>
-        </div>
+    const SPECIES_2024 = {
+      'Humano': { speed: 30, traits: [{name: 'Versátil', desc: 'Ganas un dote extra.'}] },
+      'Elfo': { speed: 30, traits: [{name: 'Trance', desc: 'Duermes solo 4 horas.'}] },
+      'Enano': { speed: 30, traits: [{name: 'Resistencia', desc: 'Resistencia veneno.'}] },
+      'Tiefling': { speed: 30, traits: [{name: 'Legado', desc: 'Resistencia fuego.'}] },
+      'Mediano': { speed: 25, traits: [{name: 'Suerte', desc: 'Repites los 1s.'}] },
+      'Dracónido': { speed: 30, traits: [{name: 'Aliento', desc: 'Daño elemental.'}] },
+      'Gnomo': { speed: 30, traits: [{name: 'Astucia', desc: 'Ventaja salv. mentales.'}] },
+      'Goliath': { speed: 35, traits: [{name: 'Poderío', desc: 'Gigante.'}] },
+      'Orco': { speed: 30, traits: [{name: 'Adrenalina', desc: 'Dash adicional.'}] },
+      'Aasimar': { speed: 30, traits: [{name: 'Celestial', desc: 'Curas.'}] }
+    };
 
-        {/* NUEVA INTERFAZ DE CLASE TIPO D&D BEYOND */}
-        <div className="space-y-6 border-t border-stone-200 pt-8 mt-8">
-          <h3 className="font-black text-stone-800 uppercase text-sm tracking-widest">Selecciona tu Clase</h3>
+    const ITEM_COMPENDIUM = {
+      weapons: [
+        { id: 'w_bas', name: 'Bastón', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1 },
+        { id: 'w_dag', name: 'Daga', type: 'simple', damage: '1d4', dmgType: 'perforante', prop: 'finesse', hands: 1 },
+        { id: 'w_gar', name: 'Garrote', type: 'simple', damage: '1d4', dmgType: 'contundente', prop: 'str', hands: 1 },
+        { id: 'w_hch', name: 'Hacha de Mano', type: 'simple', damage: '1d6', dmgType: 'cortante', prop: 'str', hands: 1 },
+        { id: 'w_jab', name: 'Jabalina', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1 },
+        { id: 'w_lan', name: 'Lanza', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'str', hands: 1 },
+        { id: 'w_maz', name: 'Maza', type: 'simple', damage: '1d6', dmgType: 'contundente', prop: 'str', hands: 1 },
+        { id: 'w_ac', name: 'Arco Corto', type: 'simple', damage: '1d6', dmgType: 'perforante', prop: 'dex', hands: 2 },
+        { id: 'w_bal', name: 'Ballesta Ligera', type: 'simple', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2 },
+        { id: 'w_ala', name: 'Alabarda', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2 },
+        { id: 'w_cim', name: 'Cimitarra', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1 },
+        { id: 'w_ec', name: 'Espada Corta', type: 'martial', damage: '1d6', dmgType: 'cortante', prop: 'finesse', hands: 1 },
+        { id: 'w_el', name: 'Espada Larga', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1 },
+        { id: 'w_esp', name: 'Espadón', type: 'martial', damage: '2d6', dmgType: 'cortante', prop: 'str', hands: 2 },
+        { id: 'w_est', name: 'Estoque', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'finesse', hands: 1 },
+        { id: 'w_gha', name: 'Gran Hacha', type: 'martial', damage: '1d12', dmgType: 'cortante', prop: 'str', hands: 2 },
+        { id: 'w_guj', name: 'Guja', type: 'martial', damage: '1d10', dmgType: 'cortante', prop: 'str', hands: 2 },
+        { id: 'w_hba', name: 'Hacha de Batalla', type: 'martial', damage: '1d8', dmgType: 'cortante', prop: 'str', hands: 1 },
+        { id: 'w_lat', name: 'Látigo', type: 'martial', damage: '1d4', dmgType: 'cortante', prop: 'finesse', hands: 1 },
+        { id: 'w_mgu', name: 'Martillo de Guerra', type: 'martial', damage: '1d8', dmgType: 'contundente', prop: 'str', hands: 1 },
+        { id: 'w_mzo', name: 'Mazo', type: 'martial', damage: '2d6', dmgType: 'contundente', prop: 'str', hands: 2 },
+        { id: 'w_al', name: 'Arco Largo', type: 'martial', damage: '1d8', dmgType: 'perforante', prop: 'dex', hands: 2 },
+      ],
+      armor: [
+        { id: 'a_c', name: 'Armadura de Cuero', type: 'light', ac: 11, maxDex: 99 },
+        { id: 'a_ct', name: 'Cuero Tachonado', type: 'light', ac: 12, maxDex: 99 },
+        { id: 'a_pi', name: 'Pieles', type: 'medium', ac: 12, maxDex: 2 },
+        { id: 'a_cm', name: 'Camisote de Mallas', type: 'medium', ac: 13, maxDex: 2 },
+        { id: 'a_esc', name: 'Cota de Escamas', type: 'medium', ac: 14, maxDex: 2 },
+        { id: 'a_co', name: 'Coraza', type: 'medium', ac: 14, maxDex: 2 },
+        { id: 'a_mp', name: 'Media Placas', type: 'medium', ac: 15, maxDex: 2 },
+        { id: 'a_can', name: 'Cota de Anillas', type: 'heavy', ac: 14, maxDex: 0 },
+        { id: 'a_cma', name: 'Cota de Malla', type: 'heavy', ac: 16, maxDex: 0 },
+        { id: 'a_pl', name: 'Placas', type: 'heavy', ac: 18, maxDex: 0 },
+      ],
+      shields: [{ id: 's_esc', name: 'Escudo', type: 'shield', acBonus: 2, hands: 1 }],
+      magic: [{ id: 'm_an1', name: 'Anillo de Protección', type: 'ring', desc: '+1 CA' }, { id: 'm_bo1', name: 'Botas Élficas', type: 'boots', desc: 'Ventaja Sigilo' }]
+    };
+
+    // --- UTILIDADES GLOBALES ---
+    function getMod(score) {
+      return Math.floor((score - 10) / 2);
+    }
+    function formatMod(mod) {
+      return mod >= 0 ? `+${mod}` : `${mod}`;
+    }
+
+    const INITIAL_STATE = {
+      activeTab: 'Constructor',
+      header: { name: 'Héroe', race: 'Humano', background: 'Soldado' },
+      classes: [{ id: '1', name: 'Guerrero', level: 1, hpRolls: [10], subclass: '' }],
+      baseStats: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
+      asi: { plus2: 'str', plus1: 'con' },
+      combat: { hpCurrent: 0, hpTemp: 0 },
+      equipment: { head: null, chest: ITEM_COMPENDIUM.armor[1], mainHand: ITEM_COMPENDIUM.weapons[12], offHand: ITEM_COMPENDIUM.shields[0], ring1: null },
+      spells: [], usedResources: {}, manualSaves: [], manualSkills: [], customResistances: ''
+    };
+
+    // ==========================================
+    // 2. COMPONENTE PRINCIPAL APP
+    // ==========================================
+
+    function App() {
+      const [data, setData] = useState(INITIAL_STATE);
+      const [apiSpells, setApiSpells] = useState([]);
+      const [isLoadingSpells, setIsLoadingSpells] = useState(false);
+      const [dndDatabase, setDndDatabase] = useState(null);
+      
+      const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+      const [lvlUpSelectedClass, setLvlUpSelectedClass] = useState('Guerrero');
+      const [lvlUpHpMethod, setLvlUpHpMethod] = useState('average');
+      const [lvlUpHpRoll, setLvlUpHpRoll] = useState(null);
+      const [lvlUpSubclass, setLvlUpSubclass] = useState('');
+
+      // --- CÁLCULOS CENTRALIZADOS ---
+      const primaryClass = data.classes[0].name;
+      const primaryClassData = CLASSES_2024[primaryClass] || CLASSES_2024['Guerrero'];
+      const totalLevel = data.classes.reduce((sum, c) => sum + c.level, 0);
+      const profBonus = Math.ceil(totalLevel / 4) + 1;
+      const bgData = BACKGROUNDS_2024[data.header.background] || BACKGROUNDS_2024['Soldado'];
+
+      const stats = { ...data.baseStats };
+      if (data.asi.plus2) stats[data.asi.plus2] += 2;
+      if (data.asi.plus1) stats[data.asi.plus1] += 1;
+      
+      const mods = {
+        str: getMod(stats.str), dex: getMod(stats.dex), con: getMod(stats.con),
+        int: getMod(stats.int), wis: getMod(stats.wis), cha: getMod(stats.cha)
+      };
+
+      const totalBaseHp = data.classes.reduce((sum, c) => sum + (c.hpRolls ? c.hpRolls.reduce((a, b) => a + b, 0) : 0), 0);
+      const isTough = data.header.background === 'Granjero';
+      const hpMax = totalBaseHp + (totalLevel * mods.con) + (isTough ? totalLevel * 2 : 0);
+
+      // CA Dinámica
+      let ac = 10 + mods.dex;
+      const isMonk = data.classes.some(c => c.name === 'Monje');
+      const isBarb = data.classes.some(c => c.name === 'Bárbaro');
+
+      if (data.equipment.chest) {
+        const armor = data.equipment.chest;
+        if (armor.type === 'heavy') ac = armor.ac; 
+        else ac = armor.ac + Math.min(armor.maxDex !== undefined ? armor.maxDex : 99, mods.dex);
+      } else {
+        if (isMonk && !data.equipment.offHand && !data.equipment.chest) ac = 10 + mods.dex + mods.wis;
+        else if (isBarb && !data.equipment.chest) ac = 10 + mods.dex + mods.con;
+      }
+      if (data.equipment.offHand?.type === 'shield') ac += data.equipment.offHand.acBonus;
+      if (data.equipment.ring1?.id === 'm_an1') ac += 1;
+
+      const isSpellcaster = data.classes.some(c => CLASSES_2024[c.name].spellcaster);
+      const spellDC = 8 + profBonus + mods[primaryClassData.primary];
+      const spellAttack = profBonus + mods[primaryClassData.primary];
+      
+      let casterLevel = 0;
+      let totalCantrips = 0;
+      let maxSpellsAllowed = 0;
+      let maxSpellLevelGlobal = 0;
+
+      data.classes.forEach(c => {
+        const clsInfo = CLASSES_2024[c.name];
+        if (clsInfo && clsInfo.spellcaster) {
+          if (['Mago', 'Clérigo', 'Bardo', 'Druida', 'Hechicero'].includes(c.name)) {
+            casterLevel += c.level;
+            totalCantrips += (c.name === 'Mago' || c.name === 'Clérigo') ? (c.level >= 4 ? 4 : 3) : (c.level >= 4 ? 3 : 2);
+            maxSpellsAllowed += Math.min(22, c.level + 3);
+            maxSpellLevelGlobal = Math.max(maxSpellLevelGlobal, Math.min(9, Math.ceil(c.level / 2)));
+          } else if (['Explorador', 'Paladín'].includes(c.name)) {
+            casterLevel += Math.ceil(c.level / 2); 
+            totalCantrips += 2; 
+            maxSpellsAllowed += Math.max(2, Math.floor(c.level / 2) + 1);
+            maxSpellLevelGlobal = Math.max(maxSpellLevelGlobal, Math.min(5, Math.ceil(c.level / 4))); 
+          } else if (c.name === 'Brujo') {
+            casterLevel += c.level; 
+            totalCantrips += c.level >= 4 ? 3 : 2;
+            maxSpellsAllowed += Math.min(15, c.level + 2);
+            maxSpellLevelGlobal = Math.max(maxSpellLevelGlobal, Math.min(5, Math.ceil(c.level / 2))); 
+          }
+        }
+      });
+
+      const spellLimits = { maxCantrips: totalCantrips, maxSpells: maxSpellsAllowed, maxSpellLevel: maxSpellLevelGlobal };
+
+      function getSlotsForLevel(lvl) {
+        if (lvl === 0) return 'Infinita';
+        if (casterLevel === 0) return 0; 
+        const slots = [
+          [0,0,0,0,0,0,0,0,0], [2,0,0,0,0,0,0,0,0], [3,0,0,0,0,0,0,0,0], [4,2,0,0,0,0,0,0,0], 
+          [4,3,0,0,0,0,0,0,0], [4,3,2,0,0,0,0,0,0], [4,3,3,0,0,0,0,0,0], [4,3,3,1,0,0,0,0,0], 
+          [4,3,3,2,0,0,0,0,0], [4,3,3,3,1,0,0,0,0], [4,3,3,3,2,0,0,0,0], [4,3,3,3,2,1,0,0,0], 
+          [4,3,3,3,2,1,0,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,0,0], [4,3,3,3,2,1,1,1,0], 
+          [4,3,3,3,2,1,1,1,0], [4,3,3,3,2,1,1,1,1], [4,3,3,3,3,1,1,1,1], [4,3,3,3,3,2,1,1,1], 
+          [4,3,3,3,3,2,2,1,1] 
+        ];
+        return slots[Math.min(20, casterLevel)][lvl - 1] || 0;
+      }
+
+      const activeFeatures = [];
+      data.classes.forEach(c => {
+        const clsInfo = CLASSES_2024[c.name];
+        if (clsInfo && clsInfo.features) {
+          clsInfo.features.forEach(feat => { if (c.level >= feat.level) activeFeatures.push({ ...feat, originClass: c.name }); });
+          if (c.level >= 3 && c.subclass) activeFeatures.push({ name: c.subclass, level: 3, originClass: c.name, desc: "Especialización de subclase activa.", maxUses: '-', recover: '-' });
+        }
+      });
+
+      const autoResistances = [];
+      if (data.header.race === 'Enano') autoResistances.push('Veneno');
+      if (data.header.race === 'Tiefling') autoResistances.push('Fuego');
+      if (isBarb) autoResistances.push('Físico (Sólo en Furia)');
+
+      // --- HANDLERS ---
+      const updateHeader = (f, v) => setData(prev => ({ ...prev, header: { ...prev.header, [f]: v } }));
+      const updateBaseStat = (s, v) => setData(prev => ({ ...prev, baseStats: { ...prev.baseStats, [s]: Number(v) } }));
+      
+      const handlePrimaryClassChange = (v) => {
+        setData(prev => {
+          const nc = [...prev.classes]; nc[0].name = v; 
+          nc[0].hpRolls = [CLASSES_2024[v].hd]; 
+          nc[0].subclass = '';
+          const startEquip = v === 'Mago' ? ITEM_COMPENDIUM.weapons.find(w=>w.id==='w_bas') : ITEM_COMPENDIUM.weapons[0];
+          return { ...prev, classes: nc, spells: [], equipment: { ...prev.equipment, mainHand: startEquip } };
+        });
+      };
+
+      const handleBackgroundChange = (e) => {
+        const b = e.target.value; const bd = BACKGROUNDS_2024[b];
+        setData(prev => ({ ...prev, header: { ...prev.header, background: b }, asi: { plus2: bd.asis[0], plus1: bd.asis[1] } }));
+      };
+
+      const handleRollDice = () => {
+        const r = () => { const rolls = Array.from({length:4},()=>Math.floor(Math.random()*6)+1).sort((a,b)=>b-a); return rolls[0]+rolls[1]+rolls[2]; };
+        setData(prev => ({ ...prev, baseStats: { str:r(), dex:r(), con:r(), int:r(), wis:r(), cha:r() } }));
+      };
+
+      const handleDistribute = () => {
+        const vals = Object.values(data.baseStats).sort((a,b)=>b-a);
+        const prio = CLASS_PRIORITIES[primaryClass] || CLASS_PRIORITIES['Guerrero'];
+        const ns = {}; prio.forEach((a, i) => { ns[a] = vals[i]; });
+        setData(prev => ({ ...prev, baseStats: ns }));
+      };
+
+      const equipItem = (slot, item) => {
+        setData(prev => {
+          const newEq = { ...prev.equipment, [slot]: item };
+          if (item?.hands === 2 && slot === 'mainHand') newEq.offHand = null;
+          if (item?.type === 'shield' && newEq.mainHand?.hands === 2) newEq.mainHand = null;
+          return { ...prev, equipment: newEq };
+        });
+      };
+
+      const toggleSkill = (key) => setData(prev => ({ ...prev, manualSkills: prev.manualSkills.includes(key) ? prev.manualSkills.filter(k => k !== key) : [...prev.manualSkills, key] }));
+      const toggleSave = (key) => setData(prev => ({ ...prev, manualSaves: prev.manualSaves.includes(key) ? prev.manualSaves.filter(k => k !== key) : [...prev.manualSaves, key] }));
+      
+      const useResource = (k, m) => {
+        const c = data.usedResources[k] || 0;
+        if (m === 'Infinita' || c < m) setData(prev => ({ ...prev, usedResources: { ...prev.usedResources, [k]: c + 1 } }));
+      };
+
+      const toggleSpell = (s) => {
+        setData(prev => {
+          const isPrepared = prev.spells.includes(s.id);
+          if (isPrepared) return { ...prev, spells: prev.spells.filter(id => id !== s.id) };
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-            {Object.keys(CLASSES_2024).map(cls => {
-               const isSelected = primaryClass === cls;
-               const clsData = CLASSES_2024[cls];
-               return (
-                 <button 
-                   key={`card-${cls}`}
-                   onClick={() => handlePrimaryClassChange(cls)}
-                   className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${isSelected ? 'border-[#8B1515] bg-red-50 ring-1 ring-[#8B1515] shadow-md scale-[1.02]' : 'border-stone-200 bg-white hover:border-stone-300 hover:shadow-sm'}`}
-                 >
-                   <div className="flex items-center gap-2 font-black text-sm text-stone-800">
-                     <span className={isSelected ? 'text-[#8B1515]' : 'text-stone-500'}>{CLASS_ICONS[cls] || <Sword size={18}/>}</span>
-                     {cls}
-                   </div>
-                   <div className="text-[10px] font-medium text-stone-500 leading-tight">
-                     d{clsData.hd} PV • {getAttrName(clsData.primary)}
-                   </div>
-                 </button>
-               );
-            })}
-          </div>
+          const preparedCantrips = prev.spells.filter(id => apiSpells.find(sp => sp.id === id)?.level === 0).length;
+          const preparedSpellsCount = prev.spells.filter(id => apiSpells.find(sp => sp.id === id)?.level > 0).length;
+          if (s.level === 0 && preparedCantrips >= spellLimits.maxCantrips) return prev;
+          if (s.level > 0 && preparedSpellsCount >= spellLimits.maxSpells) return prev;
+          
+          return { ...prev, spells: [...prev.spells, s.id] };
+        });
+      };
 
-          {/* Panel de Detalles */}
-          <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden mt-4">
-             <div className="bg-stone-50 p-4 border-b border-stone-200 flex items-center gap-4">
-                <div className="p-3 bg-white rounded-xl shadow-sm border border-stone-200 text-[#8B1515]">
-                   {CLASS_ICONS[primaryClass] || <Sword size={24}/>}
-                </div>
+      const handleRemoveClass = (index) => {
+        setData(prev => {
+          const nc = [...prev.classes];
+          nc.splice(index, 1);
+          return { ...prev, classes: nc };
+        });
+      };
+
+      const openLevelUpWizard = () => {
+        setLvlUpSelectedClass(data.classes[0].name);
+        setLvlUpHpMethod('average');
+        setLvlUpHpRoll(null);
+        setLvlUpSubclass('');
+        setShowLevelUpModal(true);
+      };
+
+      const handleRollHp = () => {
+        const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
+        setLvlUpHpRoll(Math.floor(Math.random() * hd) + 1);
+        setLvlUpHpMethod('roll');
+      };
+
+      const confirmLevelUp = () => {
+        setData(prev => {
+          const nc = [...prev.classes]; const idx = nc.findIndex(c => c.name === lvlUpSelectedClass);
+          const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
+          const gain = lvlUpHpMethod === 'average' ? (Math.ceil(hd/2)+1) : (lvlUpHpRoll || 1);
+          if (idx >= 0) {
+            nc[idx].level += 1; nc[idx].hpRolls.push(gain);
+            if (nc[idx].level === 3) nc[idx].subclass = lvlUpSubclass;
+          } else {
+            nc.push({ id: Date.now().toString(), name: lvlUpSelectedClass, level: 1, hpRolls: [gain], subclass: '' });
+          }
+          return { ...prev, classes: nc };
+        });
+        setShowLevelUpModal(false);
+      };
+
+      // --- FETCH API DE HECHIZOS Y BASE DE DATOS DND JSON ---
+      useEffect(() => {
+        fetch('./dnd_data.json')
+          .then(res => res.json())
+          .then(json => {
+             console.log("Base de datos D&D 2024 conectada.", json);
+             setDndDatabase(json);
+          })
+          .catch(err => {
+             console.log("Usando base de datos estática local (D&D 2024).", err);
+          });
+
+        if (!isSpellcaster) return;
+        setIsLoadingSpells(true);
+        const mapEn = { 'Mago': 'Wizard', 'Paladín': 'Paladin', 'Bardo': 'Bard', 'Brujo': 'Warlock', 'Clérigo': 'Cleric', 'Druida': 'Druid', 'Explorador': 'Ranger', 'Hechicero': 'Sorcerer' };
+        const classesEn = data.classes.filter(c => CLASSES_2024[c.name].spellcaster).map(c => mapEn[c.name]).filter(Boolean);
+        Promise.all(classesEn.map(en => fetch(`https://api.open5e.com/v1/spells/?dnd_class__icontains=${en}&limit=250`).then(res => res.json())))
+        .then(results => {
+          const all = []; const seen = new Set();
+          results.forEach(res => res.results.forEach(s => {
+            if (!seen.has(s.name)) {
+              seen.add(s.name);
+              all.push({ id: s.slug, level: s.level_int || 0, name: s.name, shortDesc: (s.desc || "").substring(0, 80) + '...', fullDesc: s.desc || "" });
+            }
+          }));
+          setApiSpells(all.sort((a,b) => a.level - b.level));
+        }).finally(() => setIsLoadingSpells(false));
+      }, [data.classes, isSpellcaster]);
+
+      useEffect(() => {
+        if (data.combat.hpCurrent === 0 && hpMax > 0) setData(prev => ({ ...prev, combat: { ...prev.combat, hpCurrent: hpMax } }));
+      }, [hpMax]);
+
+      // ==========================================
+      // 3. FUNCIONES DE RENDERIZADO (HOISTED)
+      // ==========================================
+
+      function renderActionCardUI(keyId, title, subtitle, fullDesc, currentUses, maxUses, onUse, onRecover, isSpell = false) {
+        const ex = maxUses !== 'Infinita' && maxUses !== '-' && currentUses >= maxUses;
+        return (
+          <div key={keyId} className={`border-2 rounded-xl p-3 md:p-4 transition-all flex flex-col justify-between ${ex ? 'bg-stone-100 border-stone-300 grayscale opacity-60' : 'bg-white border-red-200 shadow-sm'}`}>
+            <div>
+              <div className="flex justify-between items-start mb-2">
                 <div>
-                   <h4 className="font-black text-xl text-stone-800">{primaryClass}</h4>
-                   <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mt-0.5">Atributo Principal: <span className="text-[#8B1515]">{getAttrName(primaryClassData.primary)}</span> | Dado de Golpe: <span className="text-[#8B1515]">d{primaryClassData.hd}</span></p>
+                  <h4 className="font-bold text-sm text-stone-800">{title}</h4>
+                  <span className={`text-[9px] font-bold uppercase ${isSpell ? 'text-blue-600' : 'text-amber-600'}`}>{subtitle}</span>
                 </div>
-             </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-200">
-                <div className="p-6 bg-white">
-                  <h5 className="font-bold text-xs uppercase text-stone-400 mb-4 tracking-widest">Subclases (Nivel 3)</h5>
-                  <div className="space-y-3">
-                     {primaryClassData.subclasses.map(sub => (
-                       <div key={`sub-${sub}`} className="p-3 bg-stone-50 border border-stone-100 rounded-lg hover:border-stone-300 transition-colors">
-                          <p className="font-bold text-sm text-stone-700">{sub}</p>
-                       </div>
-                     ))}
+                {maxUses !== 'Infinita' && maxUses !== '-' && (
+                  <div className="flex gap-1">
+                    {Array.from({ length: Number(maxUses) || 0 }).map((_, i) => (
+                      <div key={i} className={`w-2 h-2 rounded-full border ${i < currentUses ? 'bg-stone-300' : (isSpell ? 'bg-blue-500' : 'bg-red-500')}`} />
+                    ))}
                   </div>
-                </div>
-                <div className="p-6 bg-white">
-                  <h5 className="font-bold text-xs uppercase text-stone-400 mb-4 tracking-widest">Rasgos Destacados</h5>
-                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
-                     {primaryClassData.features.slice(0, 5).map(feat => (
-                       <div key={`desc-${feat.name}`}>
-                          <p className="font-bold text-sm text-stone-800 flex items-center gap-2">
-                            {feat.name} 
-                            <span className="text-[9px] font-black uppercase text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">Nvl {feat.level}</span>
-                          </p>
-                          <p className="text-xs text-stone-600 mt-1 leading-snug">{feat.desc}</p>
-                       </div>
-                     ))}
-                  </div>
-                </div>
-             </div>
-          </div>
-
-          {/* Multiclase Activa */}
-          {data.classes.length > 1 && (
-            <div className="mt-6 p-4 bg-stone-50 border border-stone-200 rounded-xl shadow-inner">
-               <h5 className="font-bold text-xs uppercase text-stone-500 mb-3 tracking-widest">Multiclase Activa</h5>
-               <div className="space-y-2">
-                  {data.classes.slice(1).map((c, i) => (
-                    <div key={`multi-${c.id}`} className="flex justify-between items-center bg-white p-3 rounded-lg border border-stone-200 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="text-stone-400">{CLASS_ICONS[c.name] || <Sword size={16}/>}</span>
-                        <span className="font-bold text-sm text-stone-800">{c.name}</span>
-                        {c.subclass && <span className="text-[10px] ml-2 font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 uppercase">{c.subclass}</span>}
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs font-black text-stone-600 bg-stone-100 px-2 py-1 rounded">Nvl {c.level}</span>
-                        <button onClick={() => handleRemoveClass(i + 1)} className="text-stone-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50" title="Eliminar Clase"><X size={16}/></button>
-                      </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function renderSheetUI() {
-    const skillsProf = bgData.skills || [];
-    const passiveP = 10 + mods.wis + (skillsProf.includes('perception') || data.manualSkills.includes('perception') ? profBonus : 0);
-    
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 animate-in fade-in">
-        
-        {/* Columna Izquierda: Stats y Habilidades */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-            <h3 className="font-bold text-[10px] text-stone-400 uppercase border-b mb-3 pb-1">Atributos y Modificadores</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {ATTRS.map(a => (
-                <div key={`attr-box-${a.key}`} className="bg-stone-50 p-2 rounded border text-center">
-                  <p className="text-[9px] font-bold text-stone-400 uppercase">{a.short}</p>
-                  <p className="text-lg font-black">{formatMod(mods[a.key])}</p>
-                  <p className="text-[9px] text-stone-400 bg-white border rounded mx-1 mt-1">{stats[a.key]}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-            <h3 className="font-bold text-[10px] text-stone-400 uppercase border-b mb-3 pb-1">Tiradas de Salvación</h3>
-            <div className="space-y-1">
-              {ATTRS.map(a => {
-                const isP = primaryClassData.saves.includes(a.key) || data.manualSaves.includes(a.key);
-                const isAuto = primaryClassData.saves.includes(a.key);
-                return (
-                  <div key={`save-${a.key}`} className="flex justify-between text-xs p-1 rounded hover:bg-stone-50 items-center">
-                    <div className="flex items-center gap-1.5">
-                      <input type="checkbox" checked={isP} onChange={() => toggleSave(a.key)} disabled={isAuto} className="w-3 h-3 accent-stone-800" />
-                      <span className={isP ? 'font-bold text-black' : 'text-stone-600'}>{a.name}</span>
-                    </div>
-                    <span className="font-bold tabular-nums text-stone-800">{formatMod(mods[a.key] + (isP ? profBonus : 0))}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
-             <div className="flex justify-between items-center mb-3 border-b pb-1">
-               <h3 className="font-bold text-[10px] text-stone-400 uppercase">Habilidades</h3>
-               <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">Pasiva: {passiveP}</span>
-             </div>
-             <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin">
-               {SKILLS_LIST.map(s => {
-                 const isP = skillsProf.includes(s.key) || data.manualSkills.includes(s.key);
-                 return (
-                   <div key={`skill-${s.key}`} className="flex justify-between text-[11px] p-1 border-b border-stone-50 items-center group hover:bg-stone-50">
-                     <div className="flex items-center gap-1.5">
-                       <input type="checkbox" checked={isP} onChange={() => toggleSkill(s.key)} disabled={skillsProf.includes(s.key)} className="w-3 h-3 accent-stone-800" />
-                       <span className={isP ? 'font-bold text-black' : 'text-stone-600'}>{s.name}</span>
-                     </div>
-                     <span className="font-bold text-stone-500 tabular-nums">{formatMod(mods[s.attr] + (isP ? profBonus : 0))}</span>
-                   </div>
-                 );
-               })}
-             </div>
-          </div>
-        </div>
-
-        {/* Columna Derecha: Combate, Armería y Rasgos */}
-        <div className="lg:col-span-8 space-y-4">
-           
-           <div className="bg-[#B22222] text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
-             <div className="absolute top-[-20%] right-[-10%] opacity-10 rotate-12 pointer-events-none"><Shield size={160}/></div>
-             <h2 className="text-3xl font-black mb-1 truncate relative z-10">{data.header.name}</h2>
-             <p className="text-red-200 font-bold uppercase text-xs tracking-wide relative z-10">
-               {data.classes.map(c=>`${c.name}${c.subclass?' ('+c.subclass+')':''} ${c.level}`).join(' / ')} • {data.header.race}
-             </p>
-             <div className="flex gap-3 mt-6 relative z-10">
-               <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
-                 <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Vida Máx</p><p className="text-3xl font-black">{hpMax}</p>
-               </div>
-               <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
-                 <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Armadura</p><p className="text-3xl font-black">{ac}</p>
-               </div>
-               <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
-                 <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Profic.</p><p className="text-3xl font-black">+{profBonus}</p>
-               </div>
-             </div>
-           </div>
-
-           <div className="bg-white p-4 md:p-6 rounded-xl border border-stone-200 shadow-sm">
-              <h3 className="font-bold text-sm uppercase text-stone-800 border-b mb-4 pb-2 flex items-center gap-2"><Backpack size={16}/> Equipamiento Rápido</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {renderEquipmentSelector('mainHand', 'Arma Principal', ITEM_COMPENDIUM.weapons)}
-                {renderEquipmentSelector('offHand', 'Mano Secundaria', [...ITEM_COMPENDIUM.weapons.filter(w=>w.hands===1), ...ITEM_COMPENDIUM.shields])}
-                {renderEquipmentSelector('chest', 'Armadura', ITEM_COMPENDIUM.armor)}
-                {renderEquipmentSelector('ring1', 'Anillo / Accesorio', ITEM_COMPENDIUM.magic)}
-              </div>
-
-              <h3 className="font-bold text-sm uppercase text-[#8B1515] border-b mb-3 pb-2 flex items-center gap-2"><Sword size={16}/> Ataques en Combate</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
-                  <thead className="text-stone-400 uppercase text-[9px] bg-stone-50 border-y">
-                    <tr><th className="p-2">Arma</th><th className="p-2 text-center">Bono Atq</th><th className="p-2">Daño (Tipo)</th></tr>
-                  </thead>
-                  <tbody>
-                    {['mainHand', 'offHand'].map(s => {
-                      const w = data.equipment[s]; if (!w || w.type === 'shield') return null;
-                      const sm = w.prop === 'finesse' ? Math.max(mods.str, mods.dex) : (w.prop === 'dex' ? mods.dex : mods.str);
-                      return (
-                        <tr key={`atk-${s}`} className="border-b h-10 hover:bg-stone-50">
-                          <td className="p-2 font-bold text-stone-800">{w.name}</td>
-                          <td className="p-2 font-black text-center text-base tabular-nums">{formatMod(sm + profBonus)}</td>
-                          <td className="p-2 font-bold">{w.damage} {formatMod(sm)} <span className="text-[8px] font-normal uppercase opacity-50 text-stone-500 ml-1">{w.dmgType}</span></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-4 p-2 bg-stone-100 border border-stone-200 rounded text-xs flex gap-2 items-center">
-                 <Shield size={14} className="text-stone-400"/>
-                 <span className="font-bold text-stone-600 uppercase">Resistencias:</span> 
-                 <span className="font-medium">{autoResistances.length ? autoResistances.join(', ') : 'Ninguna'} {data.customResistances}</span>
-              </div>
-           </div>
-
-           <div className="bg-stone-50 p-4 md:p-5 rounded-xl border border-stone-200 shadow-sm relative overflow-hidden">
-              <div className="absolute right-0 top-0 bottom-0 w-2 bg-blue-400"></div>
-              <h3 className="font-bold text-[10px] text-stone-400 uppercase mb-2">Dote de Origen: <span className="text-stone-800">{bgData.feat}</span></h3>
-              <p className="text-sm text-stone-700 italic leading-snug">"{bgData.featDesc}"</p>
-           </div>
-
-        </div>
-      </div>
-    );
-  }
-
-  function renderMagicUI() {
-    const prepSpells = apiSpells.filter(s => data.spells.includes(s.id));
-    
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in">
-        
-        {/* Columna de Habilidades y Catálogo */}
-        <div className="space-y-4">
-          <div className="bg-white p-5 md:p-6 rounded-xl border border-stone-200 shadow-sm">
-            <h3 className="font-bold text-sm mb-4 border-b pb-2 flex items-center gap-2"><Sparkles size={18} className="text-amber-500"/> Rasgos y Habilidades</h3>
-            <div className="grid gap-3">
-              {activeFeatures.length === 0 && <p className="text-xs text-stone-400 italic">No tienes rasgos especiales aún.</p>}
-              {activeFeatures.map((f, i) => renderActionCardUI(`feat-${i}`, f.name, `Nv.${f.level} ${f.originClass || ''}`, f.desc, data.usedResources[f.name] || 0, f.maxUses || '-', () => useResource(f.name, f.maxUses), () => setData(prev => ({...prev, usedResources: {...prev.usedResources, [f.name]: 0}}))))}
-            </div>
-          </div>
-          
-          {isSpellcaster && (
-            <div className="bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
-              <h4 className="font-bold mb-4 text-xs uppercase text-stone-500 tracking-widest flex items-center gap-2">
-                <Info size={14}/> Catálogo Mágico (SRD)
-              </h4>
-              <div className="flex gap-2 mb-4">
-                <span className="text-[10px] bg-white border px-2 py-1 rounded shadow-sm font-bold text-stone-600">Trucos: {prepSpells.filter(s=>s.level===0).length}/{spellLimits.maxCantrips}</span>
-                <span className="text-[10px] bg-white border px-2 py-1 rounded shadow-sm font-bold text-stone-600">Conjuros: {prepSpells.filter(s=>s.level>0).length}/{spellLimits.maxSpells}</span>
-              </div>
-              <div className="max-h-[450px] overflow-y-auto space-y-1.5 pr-2 scrollbar-thin">
-                {isLoadingSpells ? (
-                  <div className="text-center p-8 text-stone-400">
-                    <Loader2 className="animate-spin inline-block mb-2" size={24} />
-                    <p className="text-xs font-bold uppercase tracking-widest">Invocando...</p>
-                  </div>
-                ) : (
-                  apiSpells.map((s, idx) => {
-                    const isPrep = data.spells.includes(s.id);
-                    const isCantrip = s.level === 0;
-                    const isLocked = !isPrep && ((isCantrip && prepSpells.filter(sp=>sp.level===0).length >= spellLimits.maxCantrips) || (!isCantrip && prepSpells.filter(sp=>sp.level>0).length >= spellLimits.maxSpells));
-                    
-                    return (
-                      <button key={`${s.id}-${idx}`} onClick={() => toggleSpell(s)} disabled={isLocked} className={`w-full text-left p-2 rounded border text-xs transition-all flex justify-between items-center ${isPrep ? 'bg-blue-600 text-white border-blue-700 shadow-inner' : isLocked ? 'bg-stone-200 text-stone-400 cursor-not-allowed' : 'bg-white hover:border-blue-300 hover:bg-blue-50'}`}>
-                        <span className="font-bold truncate max-w-[80%]">{s.name}</span> 
-                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${isPrep ? 'bg-blue-800' : 'bg-stone-100 text-stone-500'}`}>{s.level === 0 ? 'Truco' : `Nvl ${s.level}`}</span>
-                      </button>
-                    );
-                  })
                 )}
               </div>
+              <p className="text-[10px] text-stone-600 h-16 overflow-y-auto pr-1 text-justify scrollbar-thin">{fullDesc}</p>
             </div>
-          )}
-        </div>
+            {maxUses !== '-' && (
+              <div className="flex justify-between items-center border-t pt-2 mt-2">
+                <button disabled={ex} onClick={onUse} className="text-[9px] font-bold uppercase text-[#8B1515] hover:underline">Usar</button>
+                <button onClick={onRecover} className="text-[9px] font-bold uppercase text-stone-400 hover:text-stone-600">Rest.</button>
+              </div>
+            )}
+          </div>
+        );
+      }
 
-        {/* Columna del Grimorio (Hechizos Preparados) */}
-        {isSpellcaster && (
-          <div className="bg-white p-5 md:p-6 rounded-xl border border-blue-200 shadow-md">
-             <div className="flex justify-between items-center mb-6 border-b border-blue-100 pb-3">
-                <h3 className="font-bold text-blue-900 flex items-center gap-2 text-lg"><BookOpen size={20}/> Grimorio Activo</h3>
-                <div className="text-[10px] font-black bg-blue-50 px-3 py-1.5 rounded-lg text-blue-800 border border-blue-100 shadow-sm flex gap-3">
-                  <span>CD {spellDC}</span> 
-                  <span className="border-l border-blue-200 pl-3">ATQ Mágico {formatMod(spellAttack)}</span>
+      function renderEquipmentSelector(slot, title, itemsToPick) {
+        return (
+          <div className="mb-3">
+            <label className="block text-[10px] font-bold uppercase text-stone-500 mb-1">{title}</label>
+            <select 
+              className="w-full border border-stone-300 rounded p-1.5 text-xs focus:outline-none focus:border-[#8B1515]"
+              value={data.equipment[slot] ? data.equipment[slot].id : ''}
+              onChange={(e) => equipItem(slot, itemsToPick.find(i => i.id === e.target.value) || null)}
+            >
+              <option value="">-- Vacío --</option>
+              {itemsToPick.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.name} {item.damage ? `(${item.damage})` : ''} {item.ac ? `(CA ${item.ac})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      }
+
+      function renderLevelUpModalUI() {
+        if (!showLevelUpModal) return null;
+        const existing = data.classes.find(c => c.name === lvlUpSelectedClass);
+        const nextLvl = existing ? existing.level + 1 : 1;
+        const hd = CLASSES_2024[lvlUpSelectedClass]?.hd || 8;
+        const feats = CLASSES_2024[lvlUpSelectedClass]?.features?.filter(f => f.level === nextLvl) || [];
+
+        return (
+          <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col">
+              <div className="bg-[#8B1515] p-4 text-white flex justify-between items-center">
+                <h2 className="font-bold flex items-center gap-2"><TrendingUp size={20}/> Subir Nivel</h2>
+                <button onClick={() => setShowLevelUpModal(false)}><X size={20}/></button>
+              </div>
+              <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
+                <div>
+                  <p className="text-xs font-bold text-stone-500 mb-2 uppercase">SELECCIONA CLASE A MEJORAR:</p>
+                  <select value={lvlUpSelectedClass} onChange={(e) => setLvlUpSelectedClass(e.target.value)} className="w-full border p-2 rounded">
+                    <optgroup label="Tus Clases">
+                      {data.classes.map(c => <option key={`up-${c.name}`} value={c.name}>{c.name} (Subir a Nivel {c.level + 1})</option>)}
+                    </optgroup>
+                    <optgroup label="Multiclase (Nivel 1)">
+                      {Object.keys(CLASSES_2024).filter(cls => !data.classes.find(c => c.name === cls)).map(cls => <option key={`new-${cls}`} value={cls}>{cls}</option>)}
+                    </optgroup>
+                  </select>
                 </div>
-             </div>
-             
-             <div className="space-y-6">
-               {prepSpells.length === 0 && (
-                 <div className="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl">
-                   <BookOpen size={32} className="mx-auto text-stone-300 mb-2"/>
-                   <p className="text-xs text-stone-500 font-medium">Tu grimorio está vacío.</p>
-                   <p className="text-[10px] text-stone-400 mt-1">Prepara hechizos desde el catálogo.</p>
-                 </div>
-               )}
-               
-               {[0,1,2,3,4,5,6,7,8,9].map(lvl => {
-                 const spellsOfLvl = prepSpells.filter(s => s.level === lvl);
-                 if (spellsOfLvl.length === 0) return null;
-                 const slots = getSlotsForLevel(lvl);
-                 
-                 return (
-                   <div key={`prep-lvl-${lvl}`}>
-                     <div className="flex justify-between items-end border-b border-blue-100 pb-1 mb-3">
-                       <h5 className="font-bold text-xs text-blue-800 uppercase">{lvl === 0 ? 'Trucos Infinitos' : `Nivel ${lvl}`}</h5>
-                       {lvl > 0 && <span className="text-[9px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Espacios: {slots}</span>}
+                
+                {nextLvl === 3 && (
+                  <div className="bg-amber-50 p-3 rounded border border-amber-200 shadow-inner">
+                    <p className="text-xs font-bold text-amber-800 mb-2 uppercase flex items-center gap-2"><Sparkles size={14}/> ¡Nivel 3! Elige tu Subclase:</p>
+                    <select value={lvlUpSubclass} onChange={e => setLvlUpSubclass(e.target.value)} className="w-full border p-2 rounded text-sm font-bold text-amber-900">
+                      <option value="">-- Seleccionar Subclase --</option>
+                      {CLASSES_2024[lvlUpSelectedClass]?.subclasses.map(s => <option key={`sub-${s}`} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                <div className="bg-stone-50 p-4 rounded border">
+                  <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Aumento de Salud (1d{hd}):</p>
+                  <div className="flex gap-4">
+                    <button onClick={() => setLvlUpHpMethod('average')} className={`flex-1 p-2 border-2 rounded font-bold text-sm transition-colors ${lvlUpHpMethod==='average'?'border-green-500 bg-green-50 text-green-900':'border-stone-200 text-stone-500'}`}>Promedio (+{Math.ceil(hd/2)+1})</button>
+                    <button onClick={handleRollHp} className={`flex-1 p-2 border-2 rounded font-bold text-sm transition-colors ${lvlUpHpMethod==='roll'?'border-amber-500 bg-amber-50 text-amber-900':'border-stone-200 text-stone-500'}`}>{lvlUpHpRoll ? `Resultado: ${lvlUpHpRoll}` : 'Tirar el Dado'}</button>
+                  </div>
+                </div>
+
+                {feats.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-stone-500 mb-2 uppercase">Rasgos Desbloqueados:</p>
+                    {feats.map(f => <div key={`feat-${f.name}`} className="text-sm border-l-4 border-[#8B1515] bg-stone-50 pl-3 py-2 mb-2 rounded-r"><strong>{f.name}:</strong> {f.desc}</div>)}
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t flex justify-end gap-2">
+                <button onClick={() => setShowLevelUpModal(false)} className="px-4 py-2 font-bold text-stone-500">Cerrar</button>
+                <button onClick={confirmLevelUp} disabled={nextLvl === 3 && !lvlUpSubclass} className="px-6 py-2 bg-green-600 text-white rounded font-bold shadow disabled:opacity-50">Confirmar</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function renderConstructorUI() {
+        const getAttrName = (key) => ATTRS.find(a => a.key === key)?.name || key;
+
+        const CLASS_ICONS = {
+          'Bárbaro': <Sword size={18} />,
+          'Bardo': <Heart size={18} />,
+          'Brujo': <Eye size={18} />,
+          'Clérigo': <Shield size={18} />,
+          'Druida': <Sparkles size={18} />,
+          'Explorador': <Eye size={18} />,
+          'Guerrero': <Sword size={18} />,
+          'Hechicero': <Sparkles size={18} />,
+          'Mago': <BookOpen size={18} />,
+          'Monje': <User size={18} />,
+          'Paladín': <Shield size={18} />,
+          'Pícaro': <Fingerprint size={18} />
+        };
+
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8 space-y-8 animate-in fade-in">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <h2 className="text-2xl font-black text-stone-800 tracking-tight uppercase">Constructor de Personaje</h2>
+              <button onClick={openLevelUpWizard} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                <TrendingUp size={16}/> Nivel Total: {totalLevel} (Subir Nivel)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                 <h3 className="font-bold text-stone-800 border-b pb-1 uppercase text-xs tracking-wider">Identidad y Origen</h3>
+                 <div className="grid grid-cols-1 gap-4">
+                   <input type="text" value={data.header.name} onChange={e => updateHeader('name', e.target.value)} className="w-full border border-stone-300 p-2 rounded font-bold focus:border-[#8B1515] focus:outline-none" placeholder="Nombre del Héroe" />
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Especie</label>
+                       <select value={data.header.race} onChange={e => updateHeader('race', e.target.value)} className="w-full border border-stone-300 p-2 rounded text-sm focus:outline-none">
+                         {Object.keys(SPECIES_2024).map(s => <option key={s} value={s}>{s}</option>)}
+                       </select>
                      </div>
-                     <div className="grid gap-3">
-                       {spellsOfLvl.map((s, i) => renderActionCardUI(`prep-${s.id}-${i}`, s.name, lvl === 0 ? 'Truco' : `Nivel ${lvl}`, s.fullDesc, data.usedResources[s.id] || 0, lvl === 0 ? 'Infinita' : slots, () => useResource(s.id, slots), () => setData(prev => ({...prev, usedResources: {...prev.usedResources, [s.id]: 0}})), true))}
+                     <div>
+                       <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Trasfondo</label>
+                       <select value={data.header.background} onChange={handleBackgroundChange} className="w-full border border-stone-300 p-2 rounded text-sm focus:outline-none">
+                         {Object.keys(BACKGROUNDS_2024).map(b => {
+                           const bd = BACKGROUNDS_2024[b];
+                           const sText = bd.asis.map(a => ATTRS.find(at => at.key === a)?.short).join('/');
+                           return <option key={b} value={b}>{b} (+{sText})</option>;
+                         })}
+                       </select>
                      </div>
                    </div>
-                 );
-               })}
-             </div>
+                 </div>
+                 
+                 <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col gap-3 shadow-inner mt-6">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-bold text-stone-400 uppercase">Clases Actuales</p>
+                      <button onClick={openLevelUpWizard} className="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold shadow-md hover:bg-green-700 transition-colors flex items-center gap-2">
+                        <TrendingUp size={14}/> Subir Nivel
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {data.classes.map((c, i) => (
+                        <div key={c.id} className="flex justify-between items-center bg-white p-2 rounded border border-stone-200">
+                          <div>
+                            {i === 0 ? (
+                              <select value={c.name} onChange={(e) => handlePrimaryClassChange(e.target.value)} className="font-black text-sm bg-transparent focus:outline-none text-[#8B1515] cursor-pointer border-b border-dashed border-[#8B1515]/50">
+                                {Object.keys(CLASSES_2024).map(cls => <option key={cls} value={cls}>{cls}</option>)}
+                              </select>
+                            ) : (
+                              <span className="font-bold text-sm text-stone-700">{c.name}</span>
+                            )}
+                            {c.subclass && <span className="text-[10px] ml-2 text-stone-500 uppercase">({c.subclass})</span>}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-bold bg-stone-100 px-2 py-0.5 rounded">Nvl {c.level}</span>
+                            {i > 0 && <button onClick={() => handleRemoveClass(i)} className="text-stone-300 hover:text-red-500"><X size={14}/></button>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-end border-b pb-1">
+                  <h3 className="font-bold text-stone-800 uppercase text-xs tracking-wider">Atributos Base</h3>
+                  <div className="flex gap-2">
+                    <button onClick={handleRollDice} className="flex items-center gap-1 bg-stone-200 text-stone-700 px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-stone-300 transition-colors" title="Tira 4d6 y descarta el menor">
+                      <Dices size={14}/> Tirar
+                    </button>
+                    <button onClick={handleDistribute} className="flex items-center gap-1 bg-[#8B1515] text-white px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-[#701010] transition-colors" title="Auto-asignar">
+                      <Sparkles size={14}/> Auto-Asignar
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                   {ATTRS.map(a => {
+                     const totalBonus = (data.asi.plus2 === a.key ? 2 : 0) + (data.asi.plus1 === a.key ? 1 : 0);
+                     return (
+                       <div key={a.key} className="text-center relative flex flex-col">
+                         <label className="text-[10px] font-bold text-stone-400 uppercase mb-1 flex items-center justify-between">
+                           {a.name}
+                           {totalBonus > 0 && <span className="text-[9px] bg-green-100 text-green-700 px-1 rounded">+{totalBonus}</span>}
+                         </label>
+                         <input type="number" value={data.baseStats[a.key]} onChange={e => updateBaseStat(a.key, e.target.value)} className={`w-full border p-2 rounded text-center font-bold text-lg focus:outline-none ${totalBonus > 0 ? 'border-green-400 bg-green-50' : 'border-stone-300 focus:border-[#8B1515]'}`} />
+                       </div>
+                     );
+                   })}
+                </div>
+              </div>
+            </div>
+
+            {/* NUEVA INTERFAZ DE CLASE TIPO D&D BEYOND */}
+            <div className="space-y-6 border-t border-stone-200 pt-8 mt-8">
+              <h3 className="font-black text-stone-800 uppercase text-sm tracking-widest">Selecciona tu Clase</h3>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                {Object.keys(CLASSES_2024).map(cls => {
+                   const isSelected = primaryClass === cls;
+                   const clsData = CLASSES_2024[cls];
+                   return (
+                     <button 
+                       key={`card-${cls}`}
+                       onClick={() => handlePrimaryClassChange(cls)}
+                       className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${isSelected ? 'border-[#8B1515] bg-red-50 ring-1 ring-[#8B1515] shadow-md scale-[1.02]' : 'border-stone-200 bg-white hover:border-stone-300 hover:shadow-sm'}`}
+                     >
+                       <div className="flex items-center gap-2 font-black text-sm text-stone-800">
+                         <span className={isSelected ? 'text-[#8B1515]' : 'text-stone-500'}>{CLASS_ICONS[cls] || <Sword size={18}/>}</span>
+                         {cls}
+                       </div>
+                       <div className="text-[10px] font-medium text-stone-500 leading-tight">
+                         d{clsData.hd} PV • {getAttrName(clsData.primary)}
+                       </div>
+                     </button>
+                   );
+                })}
+              </div>
+
+              {/* Panel de Detalles */}
+              <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden mt-4">
+                 <div className="bg-stone-50 p-4 border-b border-stone-200 flex items-center gap-4">
+                    <div className="p-3 bg-white rounded-xl shadow-sm border border-stone-200 text-[#8B1515]">
+                       {CLASS_ICONS[primaryClass] || <Sword size={24}/>}
+                    </div>
+                    <div>
+                       <h4 className="font-black text-xl text-stone-800">{primaryClass}</h4>
+                       <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mt-0.5">Atributo Principal: <span className="text-[#8B1515]">{getAttrName(primaryClassData.primary)}</span> | Dado de Golpe: <span className="text-[#8B1515]">d{primaryClassData.hd}</span></p>
+                    </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-200">
+                    <div className="p-6 bg-white">
+                      <h5 className="font-bold text-xs uppercase text-stone-400 mb-4 tracking-widest">Subclases (Nivel 3)</h5>
+                      <div className="space-y-3">
+                         {primaryClassData.subclasses.map(sub => (
+                           <div key={`sub-${sub}`} className="p-3 bg-stone-50 border border-stone-100 rounded-lg hover:border-stone-300 transition-colors">
+                              <p className="font-bold text-sm text-stone-700">{sub}</p>
+                           </div>
+                         ))}
+                      </div>
+                    </div>
+                    <div className="p-6 bg-white">
+                      <h5 className="font-bold text-xs uppercase text-stone-400 mb-4 tracking-widest">Rasgos Destacados</h5>
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                         {primaryClassData.features.slice(0, 5).map(feat => (
+                           <div key={`desc-${feat.name}`}>
+                              <p className="font-bold text-sm text-stone-800 flex items-center gap-2">
+                                {feat.name} 
+                                <span className="text-[9px] font-black uppercase text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">Nvl {feat.level}</span>
+                              </p>
+                              <p className="text-xs text-stone-600 mt-1 leading-snug">{feat.desc}</p>
+                           </div>
+                         ))}
+                      </div>
+                    </div>
+                 </div>
+              </div>
+
+              {/* Multiclase Activa */}
+              {data.classes.length > 1 && (
+                <div className="mt-6 p-4 bg-stone-50 border border-stone-200 rounded-xl shadow-inner">
+                   <h5 className="font-bold text-xs uppercase text-stone-500 mb-3 tracking-widest">Multiclase Activa</h5>
+                   <div className="space-y-2">
+                      {data.classes.slice(1).map((c, i) => (
+                        <div key={`multi-${c.id}`} className="flex justify-between items-center bg-white p-3 rounded-lg border border-stone-200 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-stone-400">{CLASS_ICONS[c.name] || <Sword size={16}/>}</span>
+                            <span className="font-bold text-sm text-stone-800">{c.name}</span>
+                            {c.subclass && <span className="text-[10px] ml-2 font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 uppercase">{c.subclass}</span>}
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-xs font-black text-stone-600 bg-stone-100 px-2 py-1 rounded">Nvl {c.level}</span>
+                            <button onClick={() => handleRemoveClass(i + 1)} className="text-stone-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50" title="Eliminar Clase"><X size={16}/></button>
+                          </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    );
-  }
+        );
+      }
 
-  // --- RETURN PRINCIPAL ---
-  return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans pb-12">
-      <nav className="bg-[#8B1515] text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2"><Shield size={24}/><h1 className="font-black text-xl tracking-tighter uppercase">D&D 2024</h1></div>
-      </nav>
+      function renderSheetUI() {
+        const skillsProf = bgData.skills || [];
+        const passiveP = 10 + mods.wis + (skillsProf.includes('perception') || data.manualSkills.includes('perception') ? profBonus : 0);
+        
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 animate-in fade-in">
+            
+            {/* Columna Izquierda: Stats y Habilidades */}
+            <div className="lg:col-span-4 space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+                <h3 className="font-bold text-[10px] text-stone-400 uppercase border-b mb-3 pb-1">Atributos y Modificadores</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {ATTRS.map(a => (
+                    <div key={`attr-box-${a.key}`} className="bg-stone-50 p-2 rounded border text-center">
+                      <p className="text-[9px] font-bold text-stone-400 uppercase">{a.short}</p>
+                      <p className="text-lg font-black">{formatMod(mods[a.key])}</p>
+                      <p className="text-[9px] text-stone-400 bg-white border rounded mx-1 mt-1">{stats[a.key]}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+                <h3 className="font-bold text-[10px] text-stone-400 uppercase border-b mb-3 pb-1">Tiradas de Salvación</h3>
+                <div className="space-y-1">
+                  {ATTRS.map(a => {
+                    const isP = primaryClassData.saves.includes(a.key) || data.manualSaves.includes(a.key);
+                    const isAuto = primaryClassData.saves.includes(a.key);
+                    return (
+                      <div key={`save-${a.key}`} className="flex justify-between text-xs p-1 rounded hover:bg-stone-50 items-center">
+                        <div className="flex items-center gap-1.5">
+                          <input type="checkbox" checked={isP} onChange={() => toggleSave(a.key)} disabled={isAuto} className="w-3 h-3 accent-stone-800" />
+                          <span className={isP ? 'font-bold text-black' : 'text-stone-600'}>{a.name}</span>
+                        </div>
+                        <span className="font-bold tabular-nums text-stone-800">{formatMod(mods[a.key] + (isP ? profBonus : 0))}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+                 <div className="flex justify-between items-center mb-3 border-b pb-1">
+                   <h3 className="font-bold text-[10px] text-stone-400 uppercase">Habilidades</h3>
+                   <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">Pasiva: {passiveP}</span>
+                 </div>
+                 <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin">
+                   {SKILLS_LIST.map(s => {
+                     const isP = skillsProf.includes(s.key) || data.manualSkills.includes(s.key);
+                     return (
+                       <div key={`skill-${s.key}`} className="flex justify-between text-[11px] p-1 border-b border-stone-50 items-center group hover:bg-stone-50">
+                         <div className="flex items-center gap-1.5">
+                           <input type="checkbox" checked={isP} onChange={() => toggleSkill(s.key)} disabled={skillsProf.includes(s.key)} className="w-3 h-3 accent-stone-800" />
+                           <span className={isP ? 'font-bold text-black' : 'text-stone-600'}>{s.name}</span>
+                         </div>
+                         <span className="font-bold text-stone-500 tabular-nums">{formatMod(mods[s.attr] + (isP ? profBonus : 0))}</span>
+                       </div>
+                     );
+                   })}
+                 </div>
+              </div>
+            </div>
 
-      {renderLevelUpModalUI()}
+            {/* Columna Derecha: Combate, Armería y Rasgos */}
+            <div className="lg:col-span-8 space-y-4">
+               
+               <div className="bg-[#B22222] text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                 <div className="absolute top-[-20%] right-[-10%] opacity-10 rotate-12 pointer-events-none"><Shield size={160}/></div>
+                 <h2 className="text-3xl font-black mb-1 truncate relative z-10">{data.header.name}</h2>
+                 <p className="text-red-200 font-bold uppercase text-xs tracking-wide relative z-10">
+                   {data.classes.map(c=>`${c.name}${c.subclass?' ('+c.subclass+')':''} ${c.level}`).join(' / ')} • {data.header.race}
+                 </p>
+                 <div className="flex gap-3 mt-6 relative z-10">
+                   <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
+                     <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Vida Máx</p><p className="text-3xl font-black">{hpMax}</p>
+                   </div>
+                   <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
+                     <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Armadura</p><p className="text-3xl font-black">{ac}</p>
+                   </div>
+                   <div className="bg-black/20 flex-1 py-3 rounded-xl border border-white/10 text-center shadow-inner">
+                     <p className="text-[10px] opacity-70 uppercase font-black tracking-widest">Profic.</p><p className="text-3xl font-black">+{profBonus}</p>
+                   </div>
+                 </div>
+               </div>
 
-      <main className="max-w-[1400px] mx-auto p-4 md:p-6">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 bg-white p-2 rounded-2xl shadow-sm border border-stone-200">
-          {[
-            { id: 'Constructor', icon: <Wrench size={16}/>, label: 'CONSTRUCTOR' },
-            { id: 'Hoja', icon: <FileText size={16}/>, label: 'HOJA DE PERSONAJE' },
-            { id: 'Magia', icon: <Sparkles size={16}/>, label: 'RASGOS Y MAGIA' }
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setData(prev => ({...prev, activeTab: tab.id}))}
-              className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${data.activeTab === tab.id ? 'bg-[#8B1515] text-white shadow-md' : 'text-stone-500 hover:bg-stone-50'}`}>
-              {tab.icon} {tab.label}
-            </button>
-          ))}
+               <div className="bg-white p-4 md:p-6 rounded-xl border border-stone-200 shadow-sm">
+                  <h3 className="font-bold text-sm uppercase text-stone-800 border-b mb-4 pb-2 flex items-center gap-2"><Backpack size={16}/> Equipamiento Rápido</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    {renderEquipmentSelector('mainHand', 'Arma Principal', ITEM_COMPENDIUM.weapons)}
+                    {renderEquipmentSelector('offHand', 'Mano Secundaria', [...ITEM_COMPENDIUM.weapons.filter(w=>w.hands===1), ...ITEM_COMPENDIUM.shields])}
+                    {renderEquipmentSelector('chest', 'Armadura', ITEM_COMPENDIUM.armor)}
+                    {renderEquipmentSelector('ring1', 'Anillo / Accesorio', ITEM_COMPENDIUM.magic)}
+                  </div>
+
+                  <h3 className="font-bold text-sm uppercase text-[#8B1515] border-b mb-3 pb-2 flex items-center gap-2"><Sword size={16}/> Ataques en Combate</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="text-stone-400 uppercase text-[9px] bg-stone-50 border-y">
+                        <tr><th className="p-2">Arma</th><th className="p-2 text-center">Bono Atq</th><th className="p-2">Daño (Tipo)</th></tr>
+                      </thead>
+                      <tbody>
+                        {['mainHand', 'offHand'].map(s => {
+                          const w = data.equipment[s]; if (!w || w.type === 'shield') return null;
+                          const sm = w.prop === 'finesse' ? Math.max(mods.str, mods.dex) : (w.prop === 'dex' ? mods.dex : mods.str);
+                          return (
+                            <tr key={`atk-${s}`} className="border-b h-10 hover:bg-stone-50">
+                              <td className="p-2 font-bold text-stone-800">{w.name}</td>
+                              <td className="p-2 font-black text-center text-base tabular-nums">{formatMod(sm + profBonus)}</td>
+                              <td className="p-2 font-bold">{w.damage} {formatMod(sm)} <span className="text-[8px] font-normal uppercase opacity-50 text-stone-500 ml-1">{w.dmgType}</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-4 p-2 bg-stone-100 border border-stone-200 rounded text-xs flex gap-2 items-center">
+                     <Shield size={14} className="text-stone-400"/>
+                     <span className="font-bold text-stone-600 uppercase">Resistencias:</span> 
+                     <span className="font-medium">{autoResistances.length ? autoResistances.join(', ') : 'Ninguna'} {data.customResistances}</span>
+                  </div>
+               </div>
+
+               <div className="bg-stone-50 p-4 md:p-5 rounded-xl border border-stone-200 shadow-sm relative overflow-hidden">
+                  <div className="absolute right-0 top-0 bottom-0 w-2 bg-blue-400"></div>
+                  <h3 className="font-bold text-[10px] text-stone-400 uppercase mb-2">Dote de Origen: <span className="text-stone-800">{bgData.feat}</span></h3>
+                  <p className="text-sm text-stone-700 italic leading-snug">"{bgData.featDesc}"</p>
+               </div>
+
+            </div>
+          </div>
+        );
+      }
+
+      function renderMagicUI() {
+        const prepSpells = apiSpells.filter(s => data.spells.includes(s.id));
+        
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in">
+            
+            {/* Columna de Habilidades y Catálogo */}
+            <div className="space-y-4">
+              <div className="bg-white p-5 md:p-6 rounded-xl border border-stone-200 shadow-sm">
+                <h3 className="font-bold text-sm mb-4 border-b pb-2 flex items-center gap-2"><Sparkles size={18} className="text-amber-500"/> Rasgos y Habilidades</h3>
+                <div className="grid gap-3">
+                  {activeFeatures.length === 0 && <p className="text-xs text-stone-400 italic">No tienes rasgos especiales aún.</p>}
+                  {activeFeatures.map((f, i) => renderActionCardUI(`feat-${i}`, f.name, `Nv.${f.level} ${f.originClass || ''}`, f.desc, data.usedResources[f.name] || 0, f.maxUses || '-', () => useResource(f.name, f.maxUses), () => setData(prev => ({...prev, usedResources: {...prev.usedResources, [f.name]: 0}}))))}
+                </div>
+              </div>
+              
+              {isSpellcaster && (
+                <div className="bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
+                  <h4 className="font-bold mb-4 text-xs uppercase text-stone-500 tracking-widest flex items-center gap-2">
+                    <Info size={14}/> Catálogo Mágico (SRD Open5e)
+                  </h4>
+                  <div className="flex gap-2 mb-4">
+                    <span className="text-[10px] bg-white border px-2 py-1 rounded shadow-sm font-bold text-stone-600">Trucos: {prepSpells.filter(s=>s.level===0).length}/{spellLimits.maxCantrips}</span>
+                    <span className="text-[10px] bg-white border px-2 py-1 rounded shadow-sm font-bold text-stone-600">Conjuros: {prepSpells.filter(s=>s.level>0).length}/{spellLimits.maxSpells}</span>
+                  </div>
+                  <div className="max-h-[450px] overflow-y-auto space-y-1.5 pr-2 scrollbar-thin">
+                    {isLoadingSpells ? (
+                      <div className="text-center p-8 text-stone-400">
+                        <Loader2 className="animate-spin inline-block mb-2" size={24} />
+                        <p className="text-xs font-bold uppercase tracking-widest">Invocando...</p>
+                      </div>
+                    ) : (
+                      apiSpells.map((s, idx) => {
+                        const isPrep = data.spells.includes(s.id);
+                        const isCantrip = s.level === 0;
+                        const isLocked = !isPrep && ((isCantrip && prepSpells.filter(sp=>sp.level===0).length >= spellLimits.maxCantrips) || (!isCantrip && prepSpells.filter(sp=>sp.level>0).length >= spellLimits.maxSpells));
+                        
+                        return (
+                          <button key={`${s.id}-${idx}`} onClick={() => toggleSpell(s)} disabled={isLocked} className={`w-full text-left p-2 rounded border text-xs transition-all flex justify-between items-center ${isPrep ? 'bg-blue-600 text-white border-blue-700 shadow-inner' : isLocked ? 'bg-stone-200 text-stone-400 cursor-not-allowed' : 'bg-white hover:border-blue-300 hover:bg-blue-50'}`}>
+                            <span className="font-bold truncate max-w-[80%]">{s.name}</span> 
+                            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${isPrep ? 'bg-blue-800' : 'bg-stone-100 text-stone-500'}`}>{s.level === 0 ? 'Truco' : `Nvl ${s.level}`}</span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Columna del Grimorio (Hechizos Preparados) */}
+            {isSpellcaster && (
+              <div className="bg-white p-5 md:p-6 rounded-xl border border-blue-200 shadow-md">
+                 <div className="flex justify-between items-center mb-6 border-b border-blue-100 pb-3">
+                    <h3 className="font-bold text-blue-900 flex items-center gap-2 text-lg"><BookOpen size={20}/> Grimorio Activo</h3>
+                    <div className="text-[10px] font-black bg-blue-50 px-3 py-1.5 rounded-lg text-blue-800 border border-blue-100 shadow-sm flex gap-3">
+                      <span>CD {spellDC}</span> 
+                      <span className="border-l border-blue-200 pl-3">ATQ Mágico {formatMod(spellAttack)}</span>
+                    </div>
+                 </div>
+                 
+                 <div className="space-y-6">
+                   {prepSpells.length === 0 && (
+                     <div className="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl">
+                       <BookOpen size={32} className="mx-auto text-stone-300 mb-2"/>
+                       <p className="text-xs text-stone-500 font-medium">Tu grimorio está vacío.</p>
+                       <p className="text-[10px] text-stone-400 mt-1">Prepara hechizos desde el catálogo.</p>
+                     </div>
+                   )}
+                   
+                   {[0,1,2,3,4,5,6,7,8,9].map(lvl => {
+                     const spellsOfLvl = prepSpells.filter(s => s.level === lvl);
+                     if (spellsOfLvl.length === 0) return null;
+                     const slots = getSlotsForLevel(lvl);
+                     
+                     return (
+                       <div key={`prep-lvl-${lvl}`}>
+                         <div className="flex justify-between items-end border-b border-blue-100 pb-1 mb-3">
+                           <h5 className="font-bold text-xs text-blue-800 uppercase">{lvl === 0 ? 'Trucos Infinitos' : `Nivel ${lvl}`}</h5>
+                           {lvl > 0 && <span className="text-[9px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Espacios: {slots}</span>}
+                         </div>
+                         <div className="grid gap-3">
+                           {spellsOfLvl.map((s, i) => renderActionCardUI(`prep-${s.id}-${i}`, s.name, lvl === 0 ? 'Truco' : `Nivel ${lvl}`, s.fullDesc, data.usedResources[s.id] || 0, lvl === 0 ? 'Infinita' : slots, () => useResource(s.id, slots), () => setData(prev => ({...prev, usedResources: {...prev.usedResources, [s.id]: 0}})), true))}
+                         </div>
+                       </div>
+                     );
+                   })}
+                 </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // --- RETURN PRINCIPAL ---
+      return (
+        <div className="min-h-screen bg-stone-50 text-stone-900 font-sans pb-12">
+          <nav className="bg-[#8B1515] text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
+            <div className="flex items-center gap-2"><Shield size={24}/><h1 className="font-black text-xl tracking-tighter uppercase">D&D 2024</h1></div>
+          </nav>
+
+          {renderLevelUpModalUI()}
+
+          <main className="max-w-[1400px] mx-auto p-4 md:p-6">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8 bg-white p-2 rounded-2xl shadow-sm border border-stone-200">
+              {[
+                { id: 'Constructor', icon: <Wrench size={16}/>, label: 'CONSTRUCTOR' },
+                { id: 'Hoja', icon: <FileText size={16}/>, label: 'HOJA DE PERSONAJE' },
+                { id: 'Magia', icon: <Sparkles size={16}/>, label: 'RASGOS Y MAGIA' }
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setData(prev => ({...prev, activeTab: tab.id}))}
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black transition-all ${data.activeTab === tab.id ? 'bg-[#8B1515] text-white shadow-md' : 'text-stone-500 hover:bg-stone-50'}`}>
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {data.activeTab === 'Constructor' && renderConstructorUI()}
+            {data.activeTab === 'Hoja' && renderSheetUI()}
+            {data.activeTab === 'Magia' && renderMagicUI()}
+          </main>
         </div>
+      );
+    }
 
-        {data.activeTab === 'Constructor' && renderConstructorUI()}
-        {data.activeTab === 'Hoja' && renderSheetUI()}
-        {data.activeTab === 'Magia' && renderMagicUI()}
-      </main>
-    </div>
-  );
-}
+    // Inicialización para React standalone
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
