@@ -220,6 +220,14 @@
         { id: 'a_pl', name: 'Placas', type: 'heavy', ac: 18, maxDex: 0, costCP: 150000 },
       ],
       shields: [{ id: 's_esc', name: 'Escudo', type: 'shield', acBonus: 2, hands: 1, costCP: 1000 }],
+      gear: [
+        { id: 'g_exp', name: 'Paquete de Explorador', type: 'gear', desc: 'Mochila, saco de dormir, kit de cocina, yesquero, 10 antorchas, 10 días de raciones, odre, 50 pies de cuerda.', costCP: 1000 },
+        { id: 'g_dun', name: 'Paquete de Mazmorras', type: 'gear', desc: 'Mochila, palanca, martillo, 10 pitones, 10 antorchas, yesquero, 10 días de raciones, odre, 50 pies de cuerda.', costCP: 1200 },
+        { id: 'g_pri', name: 'Paquete de Sacerdote', type: 'gear', desc: 'Mochila, manta, 10 velas, yesquero, limosnero, incienso, incensario, vestimentas, 2 días de raciones, odre.', costCP: 1900 },
+        { id: 'g_sch', name: 'Paquete de Erudito', type: 'gear', desc: 'Mochila, libro de saber, tinta, pluma, 10 hojas de pergamino, bolsita de arena, cuchillito.', costCP: 4000 },
+        { id: 'g_ent', name: 'Paquete de Animador', type: 'gear', desc: 'Mochila, saco de dormir, 2 disfraces, 5 velas, 5 días de raciones, odre, kit de disfraz.', costCP: 4000 },
+        { id: 'g_bur', name: 'Paquete de Ladrón', type: 'gear', desc: 'Mochila, rodamientos, hilo, campana, 5 velas, palanca, martillo, pitones, linterna sorda, aceite, raciones, odre, cuerda.', costCP: 1600 }
+      ],
       magic: [
         { id: 'm_an1', name: 'Anillo de Protección', type: 'ring', desc: '+1 CA', costCP: 50000 }, 
         { id: 'm_bo1', name: 'Botas Élficas', type: 'boots', desc: 'Ventaja Sigilo', costCP: 25000 },
@@ -228,18 +236,18 @@
     };
 
     const CLASS_STARTING_PACKS = {
-      'Bárbaro': ['w_gha', 'w_hch', 'w_hch', 'w_jab', 'w_jab', 'w_jab', 'w_jab'],
-      'Bardo': ['w_est', 'w_dag', 'a_c'],
-      'Brujo': ['w_ec', 'w_dag', 'w_dag', 'a_c'],
-      'Clérigo': ['w_maz', 'a_esc', 's_esc'],
-      'Druida': ['w_cim', 'w_bas', 'a_c', 's_esc'],
-      'Explorador': ['w_ec', 'w_ec', 'w_al', 'a_esc'],
-      'Guerrero': ['w_el', 'a_cma', 's_esc', 'w_bal'],
-      'Hechicero': ['w_dag', 'w_dag', 'w_bas'],
-      'Mago': ['w_bas', 'w_dag'],
-      'Monje': ['w_ec', 'w_dag', 'w_dag'],
-      'Paladín': ['w_el', 'a_cma', 's_esc', 'w_jab', 'w_jab'],
-      'Pícaro': ['w_est', 'w_ac', 'w_dag', 'w_dag', 'a_c']
+      'Bárbaro': ['w_gha', 'w_hch', 'w_hch', 'w_jab', 'w_jab', 'w_jab', 'w_jab', 'g_exp'],
+      'Bardo': ['w_est', 'w_dag', 'a_c', 'g_ent'],
+      'Brujo': ['w_bal', 'a_c', 'w_dag', 'w_dag', 'g_sch'],
+      'Clérigo': ['w_maz', 'a_esc', 's_esc', 'g_pri'],
+      'Druida': ['w_cim', 'w_bas', 'a_c', 's_esc', 'g_exp'],
+      'Explorador': ['w_ec', 'w_ec', 'w_al', 'a_esc', 'g_exp'],
+      'Guerrero': ['w_el', 'a_cma', 's_esc', 'w_bal', 'g_dun'],
+      'Hechicero': ['w_bal', 'w_dag', 'w_dag', 'g_dun'],
+      'Mago': ['w_bas', 'g_sch'],
+      'Monje': ['w_ec', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'w_dag', 'g_dun'],
+      'Paladín': ['w_el', 'a_cma', 's_esc', 'w_jab', 'w_jab', 'w_jab', 'w_jab', 'w_jab', 'g_exp'],
+      'Pícaro': ['w_est', 'w_ac', 'w_dag', 'w_dag', 'a_c', 'g_bur']
     };
 
     // --- UTILIDADES GLOBALES Y ECONOMÍA ---
@@ -305,6 +313,13 @@
       const [lvlUpChoiceType, setLvlUpChoiceType] = useState('asi');
       const [lvlUpSelectedFeat, setLvlUpSelectedFeat] = useState('');
       const [lvlUpAsi, setLvlUpAsi] = useState({ plus2: 'str', plus1: 'con' });
+
+      const TABS = [
+        { id: 'Constructor', icon: <Wrench size={18}/>, label: 'CONSTRUCTOR', short: 'Construir' },
+        { id: 'Tienda', icon: <ShoppingCart size={18}/>, label: 'TIENDA E INVENTARIO', short: 'Tienda' },
+        { id: 'Magia', icon: <Sparkles size={18}/>, label: 'RASGOS Y MAGIA', short: 'Magia' },
+        { id: 'Hoja', icon: <FileText size={18}/>, label: 'HOJA DE PERSONAJE', short: 'Hoja' }
+      ];
 
       // --- SISTEMA DE GUARDADO (LOCALSTORAGE Y JSON) ---
       useEffect(() => {
@@ -918,6 +933,25 @@
                     </div>
                   </div>
 
+                  {/* Equipo de Aventura (Kits/Packs) */}
+                  <div className="mb-6">
+                    <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-3 border-b border-[#E5DEC3] pb-1">Bienes - Equipo y Paquetes</h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {ITEM_COMPENDIUM.gear.map(item => (
+                        <div key={item.id} className="flex justify-between items-center p-3 bg-[#F4F1EA]/50 border border-[#E5DEC3] rounded-lg hover:border-[#D4AF37] transition-all">
+                           <div>
+                             <p className="font-serif font-bold text-stone-800">{item.name}</p>
+                             <p className="text-[10px] text-stone-500 max-w-[220px] md:max-w-xs truncate" title={item.desc}>{item.desc}</p>
+                           </div>
+                           <button onClick={() => handleBuyItem(item)} className="bg-white border border-[#D4AF37] text-stone-700 hover:bg-amber-50 px-3 py-1.5 rounded-md text-xs font-black shadow-sm transition-colors flex flex-col items-center min-w-[70px]">
+                             <span>Comprar</span>
+                             <span className="text-[9px] text-amber-700">{formatPrice(item.costCP)}</span>
+                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Magia */}
                   <div>
                     <h4 className="font-black text-xs text-stone-400 uppercase tracking-widest mb-3 border-b border-[#E5DEC3] pb-1">Bazar Arcano - Objetos Mágicos</h4>
@@ -967,11 +1001,14 @@
                     <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
                       {data.inventory.map((item, idx) => (
                          <div key={item.instanceId} className="flex justify-between items-center p-3 bg-stone-50 border border-stone-200 rounded-lg shadow-sm">
-                           <div>
-                             <p className="font-serif font-bold text-stone-800">{item.name}</p>
-                             <p className="text-[10px] text-stone-500 uppercase">{item.type} • {item.damage || (item.ac ? `CA ${item.ac}` : 'Magia')}</p>
+                           <div className="flex-1 min-w-0 pr-3">
+                             <p className="font-serif font-bold text-stone-800 truncate">{item.name}</p>
+                             <p className="text-[10px] text-stone-500 line-clamp-2 leading-tight mt-0.5">
+                               <span className="uppercase font-bold text-stone-400 mr-1">{item.type}</span>
+                               {item.damage || (item.ac ? `CA ${item.ac}` : (item.desc || 'Objeto mágico'))}
+                             </p>
                            </div>
-                           <button onClick={() => handleSellItem(idx)} className="text-[10px] font-black uppercase text-red-600 hover:text-white border border-red-200 hover:bg-red-600 px-3 py-1.5 rounded transition-colors">Vender</button>
+                           <button onClick={() => handleSellItem(idx)} className="text-[10px] font-black uppercase text-red-600 hover:text-white border border-red-200 hover:bg-red-600 px-3 py-1.5 rounded transition-colors flex-shrink-0">Vender</button>
                          </div>
                       ))}
                     </div>
@@ -999,6 +1036,22 @@
           'Paladín': <Shield size={18} />,
           'Pícaro': <Fingerprint size={18} />
         };
+
+        const currentPackIds = CLASS_STARTING_PACKS[primaryClass] || [];
+        const currentPackItems = currentPackIds.map(id => {
+           let found = null;
+           Object.values(ITEM_COMPENDIUM).forEach(cat => {
+             const match = cat.find(i => i.id === id);
+             if(match) found = match;
+           });
+           return found;
+        }).filter(Boolean);
+
+        const packCounts = {};
+        currentPackItems.forEach(item => {
+           packCounts[item.name] = (packCounts[item.name] || 0) + 1;
+        });
+        const packDisplay = Object.entries(packCounts).map(([name, count]) => count > 1 ? `${count}x ${name}` : name).join(', ');
 
         return (
           <div className="bg-[#F4F1EA] rounded-xl shadow-md border border-[#E5DEC3] p-6 md:p-8 space-y-8 animate-in fade-in">
@@ -1196,25 +1249,37 @@
             <div className="space-y-4 border-t border-stone-200 pt-8 mt-8">
               <h3 className="font-bold font-serif text-stone-800 border-b-2 border-[#D4AF37]/30 pb-2 uppercase text-sm tracking-widest text-[#8B1515]">4. Patrimonio Inicial</h3>
               {!data.hasClaimedStartingGear ? (
-                <div className="bg-stone-800 p-6 rounded-xl border-2 border-[#D4AF37] text-white flex flex-col md:flex-row items-center justify-between shadow-xl">
-                  <div className="mb-4 md:mb-0">
-                    <h4 className="font-serif font-black text-xl text-[#D4AF37] mb-1">Tu Aventura Comienza</h4>
-                    <p className="text-xs text-stone-400 max-w-md">Puedes tomar el paquete de equipamiento estándar preparado para un <strong className="text-white">{primaryClass}</strong>, o bien recibir oro y comprar tu propio equipo en el Mercado.</p>
+                <div className="bg-stone-800 p-6 rounded-xl border-2 border-[#D4AF37] text-white flex flex-col md:flex-row items-center justify-between shadow-xl gap-6">
+                  <div className="mb-4 md:mb-0 flex-1">
+                    <h4 className="font-serif font-black text-xl text-[#D4AF37] mb-2">Tu Aventura Comienza</h4>
+                    <p className="text-xs text-stone-300 max-w-xl leading-relaxed mb-4">Puedes tomar el paquete de equipamiento estándar preparado para un <strong className="text-white">{primaryClass}</strong>, o bien recibir oro y comprar tu propio equipo en el Mercado.</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <button onClick={() => claimStartingGear('class')} className="flex items-center justify-center gap-2 bg-[#F4F1EA] text-[#8B1515] hover:bg-white px-4 py-2.5 rounded-lg text-xs font-black shadow-md transition-colors border border-[#D4AF37]">
-                      <Backpack size={16}/> Paquete Estándar
-                    </button>
-                    <button onClick={() => claimStartingGear('gold')} className="flex items-center justify-center gap-2 bg-gradient-to-br from-amber-600 to-yellow-600 text-white hover:from-amber-500 hover:to-yellow-500 px-4 py-2.5 rounded-lg text-xs font-black shadow-md transition-all border border-yellow-400">
-                      <Coins size={16}/> 150 Oro Inicial
-                    </button>
+                  <div className="flex flex-col gap-4 w-full md:w-1/2">
+                    <div className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col justify-between h-full">
+                       <div>
+                         <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2"><Backpack size={12} className="inline mr-1"/> Paquete de Clase</p>
+                         <p className="text-sm font-serif text-amber-100 leading-snug mb-4">{packDisplay || 'Sin equipo estándar.'}</p>
+                       </div>
+                       <button onClick={() => claimStartingGear('class')} className="w-full flex items-center justify-center gap-2 bg-[#F4F1EA] text-[#8B1515] hover:bg-white px-4 py-2.5 rounded-lg text-xs font-black shadow-md transition-colors border border-[#D4AF37]">
+                         <Backpack size={16}/> Reclamar Equipo
+                       </button>
+                    </div>
+                    <div className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col justify-between h-full">
+                       <div>
+                         <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2"><Coins size={12} className="inline mr-1"/> Riqueza Inicial</p>
+                         <p className="text-sm font-serif text-amber-100 leading-snug mb-4">150 Piezas de Oro (PO) para gastar libremente en el Mercado Aventurero.</p>
+                       </div>
+                       <button onClick={() => claimStartingGear('gold')} className="w-full flex items-center justify-center gap-2 bg-gradient-to-br from-amber-600 to-yellow-600 text-white hover:from-amber-500 hover:to-yellow-500 px-4 py-2.5 rounded-lg text-xs font-black shadow-md transition-all border border-yellow-400">
+                         <Coins size={16}/> Reclamar 150 PO
+                       </button>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="bg-green-50 p-4 rounded-xl border border-green-200 flex items-center justify-between">
                    <div>
-                     <p className="font-bold text-green-800 font-serif">Equipamiento Reclamado</p>
-                     <p className="text-[10px] text-green-700">Revisa la pestaña del Mercado Aventurero para comprar o vender.</p>
+                     <p className="font-bold text-green-800 font-serif">Patrimonio Reclamado Exitosamente</p>
+                     <p className="text-[10px] text-green-700">Revisa la pestaña "Tienda e Inventario" para equipar tus armas, comprar o vender.</p>
                    </div>
                    <Shield size={24} className="text-green-500 opacity-50"/>
                 </div>
@@ -1535,7 +1600,7 @@
 
       // --- RETURN PRINCIPAL ---
       return (
-        <div className="min-h-screen bg-[#F4F1EA] text-stone-900 font-sans pb-12 selection:bg-[#8B1515] selection:text-white">
+        <div className="min-h-screen bg-[#F4F1EA] text-stone-900 font-sans pb-28 md:pb-12 selection:bg-[#8B1515] selection:text-white">
           <nav className="bg-gradient-to-r from-[#5a0c0c] via-[#8B1515] to-[#701010] text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-50 border-b-[3px] border-[#D4AF37]">
             <div className="flex items-center gap-3"><Shield size={28} className="text-[#D4AF37] drop-shadow-md"/><h1 className="font-black font-serif text-2xl tracking-widest uppercase hidden sm:block drop-shadow-md">D&D <span className="text-[#D4AF37]">2024</span></h1></div>
             
@@ -1556,18 +1621,31 @@
           {renderLevelUpModalUI()}
 
           <main className="max-w-[1400px] mx-auto p-4 md:p-8">
-            <div className="flex gap-3 overflow-x-auto no-scrollbar mb-8 bg-white p-3 rounded-2xl shadow-md border border-[#E5DEC3]">
-              {[
-                { id: 'Constructor', icon: <Wrench size={18}/>, label: 'CONSTRUCTOR' },
-                { id: 'Tienda', icon: <ShoppingCart size={18}/>, label: 'TIENDA E INVENTARIO' },
-                { id: 'Magia', icon: <Sparkles size={18}/>, label: 'RASGOS Y MAGIA' },
-                { id: 'Hoja', icon: <FileText size={18}/>, label: 'HOJA DE PERSONAJE' }
-              ].map(tab => (
-                <button key={tab.id} onClick={() => setData(prev => ({...prev, activeTab: tab.id}))}
+            
+            {/* NAVEGACIÓN ESCRITORIO (Oculta en móviles) */}
+            <div className="hidden md:flex gap-3 overflow-x-auto no-scrollbar mb-8 bg-white p-3 rounded-2xl shadow-md border border-[#E5DEC3]">
+              {TABS.map(tab => (
+                <button key={tab.id} onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setData(prev => ({...prev, activeTab: tab.id})); }}
                   className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-xs md:text-sm font-black transition-all tracking-widest ${data.activeTab === tab.id ? 'bg-[#8B1515] text-[#F4F1EA] shadow-md ring-2 ring-[#D4AF37]/50 font-serif' : 'text-stone-500 hover:bg-[#F4F1EA] hover:text-stone-800 border border-transparent'}`}>
                   {tab.icon} {tab.label}
                 </button>
               ))}
+            </div>
+
+            {/* NAVEGACIÓN MÓVIL APP-STYLE (Pegada abajo, oculta en escritorio) */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#F4F1EA] border-t-2 border-[#D4AF37] shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.15)] z-[60] flex justify-around items-end px-2 py-2 pb-4">
+              {TABS.map(tab => {
+                const isActive = data.activeTab === tab.id;
+                return (
+                  <button key={`mob-${tab.id}`} onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setData(prev => ({...prev, activeTab: tab.id})); }}
+                    className={`flex flex-col items-center justify-center w-1/4 transition-all duration-300 ${isActive ? '-translate-y-2' : 'hover:-translate-y-1'}`}>
+                    <div className={`p-2.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-gradient-to-br from-[#701010] to-[#8B1515] text-[#D4AF37] shadow-lg ring-2 ring-[#D4AF37]/50' : 'bg-white text-stone-400 border border-[#E5DEC3] shadow-sm'}`}>
+                      {tab.icon}
+                    </div>
+                    <span className={`text-[9px] font-black mt-1.5 uppercase tracking-widest transition-colors ${isActive ? 'text-[#8B1515]' : 'text-stone-500'}`}>{tab.short}</span>
+                  </button>
+                )
+              })}
             </div>
 
             {data.activeTab === 'Constructor' && renderConstructorUI()}
